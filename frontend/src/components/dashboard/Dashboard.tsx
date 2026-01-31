@@ -595,6 +595,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                 <span>Manage Users</span>
                             </button>
                             <button
+                                onClick={() => setShowSyncHistory(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition-all"
+                            >
+                                <History size={14} />
+                                <span>Sync History</span>
+                            </button>
+                            <button
                                 onClick={handleSync}
                                 disabled={isSyncing}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all ${isSyncing
@@ -612,6 +619,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
 
             {/* User Management Modal */}
             {showUserMgmt && <UserManagement onClose={() => setShowUserMgmt(false)} />}
+
+            {/* Sync History Modal */}
+            {showSyncHistory && <SyncHistory onClose={() => setShowSyncHistory(false)} />}
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center h-64 space-y-4">

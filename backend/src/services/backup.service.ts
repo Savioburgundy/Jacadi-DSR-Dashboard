@@ -5,8 +5,8 @@ import path from 'path';
  * Service to handle database backups (Restore Points)
  */
 export const createRestorePoint = async (): Promise<string> => {
-    const sourcePath = 'd:\\Jacadi DSR\\server\\data.db';
-    const backupDir = 'd:\\Jacadi DSR\\backups';
+    const sourcePath = path.join(__dirname, '../../data.db');
+    const backupDir = path.join(__dirname, '../../backups');
 
     // Ensure backup directory exists
     if (!fs.existsSync(backupDir)) {

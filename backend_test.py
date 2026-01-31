@@ -11,7 +11,7 @@ import io
 from datetime import datetime, timedelta
 
 class JacadiDSRTester:
-    def __init__(self, base_url="https://dsr-dashboard.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://sales-metrics-97.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.user_data = None

@@ -70,7 +70,6 @@ export const runIngestion = async () => {
             console.log(`🔄 Processing file: ${file}`);
 
             // 2. Use Robust ETL Service
-            // This handles parsing, mapping, AND deduplication (smart upsert logic if configured, or delete-insert)
             const rowCount = await processInvoiceCSV(filePath);
 
             // 3. Log success

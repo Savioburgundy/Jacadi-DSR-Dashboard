@@ -60,9 +60,9 @@ export const runIngestion = async () => {
 
         try {
             // 1. Check if file already ingested
-            const exists = await db.query('SELECT id FROM ingestion_logs WHERE filename = ? AND status = ?', [file, 'success']);
+            const existingLog = await logsCollection.findOne({ filename: file, status: 'success' });
 
-            if (exists.rows.length > 0) {
+            if (existingLog) {
                 console.log(`⏭️  File ${file} already processed, skipping.`);
 
                 // Optional: Move to archive even if skipped, to clean up input folder

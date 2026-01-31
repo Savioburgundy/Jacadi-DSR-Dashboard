@@ -3,12 +3,20 @@
 @tailwind utilities;
 
 :root {
-  background-color: #020617;
-  color: white;
+  background-color: #f8fafc;
+  color: #1e293b;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
 }

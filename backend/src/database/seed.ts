@@ -204,7 +204,7 @@ const seedInvoiceData = async () => {
 };
 
 const seedEfficiencyData = async () => {
-    const inputReportsDir = path.join('D:\\Jacadi DSR\\input_reports');
+    const inputReportsDir = process.env.DATA_INPUT_DIR || path.join(__dirname, '../../data_input');
     let csvPath: string | null = null;
 
     // Check input_reports first
@@ -217,8 +217,8 @@ const seedEfficiencyData = async () => {
     // Fallback
     if (!csvPath) {
         const possiblePaths = [
-            'D:\\Jacadi DSR\\Retail + Whatsapp Sales 2.csv',
-            'D:\\Jacadi DSR\\BI exported reports\\Retail + Whatsapp Sales 2.csv'
+            path.join(__dirname, '../../Retail + Whatsapp Sales 2.csv'),
+            path.join(__dirname, '../../data_input/Retail + Whatsapp Sales 2.csv')
         ];
         for (const p of possiblePaths) {
             if (fs.existsSync(p)) {

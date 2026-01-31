@@ -29,12 +29,14 @@ def clean_input_dir():
 def safe_click(locator, desc="", timeout=40000):
     try:
         locator.wait_for(state="visible", timeout=timeout)
+        locator.scroll_into_view_if_needed()
         locator.click(force=True)
         time.sleep(0.5)
         logger.info(f"Clicked: {desc}")
+        return True
     except Exception as e:
         logger.error(f"Failed to click {desc}: {e}")
-        raise
+        return False
 
 def close_any_modal(page):
     try:
@@ -70,119 +72,183 @@ def run_download():
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(accept_downloads=True)
         page = context.new_page()
+        page.set_default_timeout(60000)
         
         try:
             # 1. Login
-            logger.info("Logging in...")
+            logger.info("Navigating to login page...")
             page.goto("https://login.olabi.ooo/", timeout=60000)
+            page.wait_for_load_state("networkidle")
             
-            try:
-                page.get_by_role("button").first.click(timeout=3000)
-            except: pass
-
+            # Fill login form
+            logger.info("Filling login credentials...")
             page.fill("#username_id", USERNAME)
             page.fill("#password_id", PASSWORD)
-            safe_click(page.locator("#signUp"), "Sign In")
-
-            # Handle dual session
+            
+            # Click login button
+            logger.info("Clicking Sign In...")
+            page.locator("#signUp").click()
+            
+            # Wait for page to change after login
+            logger.info("Waiting for login to complete...")
+            page.wait_for_timeout(5000)
+            
+            # Handle "Disconnect Previous Login" popup if it appears
             try:
-                btn = page.get_by_role("button", name="Disconnect Prev Login")
-                if btn.is_visible(timeout=5000):
-                    safe_click(btn, "Disconnect Prev")
-            except: pass
-
-            # Verify Login
-            page.wait_for_timeout(3000)
-            logger.info("Login Successful - waiting for page to stabilize")
-
-            # 2. Navigate to Reports via sidebar
-            close_any_modal(page)
-            time.sleep(2)
+                disconnect_btn = page.get_by_role("button", name="Disconnect Prev Login")
+                if disconnect_btn.is_visible(timeout=5000):
+                    logger.info("Found Disconnect button, clicking...")
+                    disconnect_btn.click()
+                    page.wait_for_timeout(3000)
+            except:
+                logger.info("No disconnect popup found")
             
-            # Click the Menu/hamburger button to open sidebar
-            menu_btn = page.locator("button:has-text('Menu')").first
-            if not menu_btn.is_visible(timeout=5000):
-                menu_btn = page.locator(".navbar-toggle, .sidebar-toggle, button.btn-toggle").first
+            # Take screenshot to see current state
+            page.screenshot(path=os.path.join(BASE_DIR, "after_login.png"))
+            logger.info("Screenshot saved: after_login.png")
             
-            safe_click(menu_btn, "Menu Button")
-            time.sleep(2)
-
-            # Look for Retail in the main menu - use more specific selector
-            # The sidebar menu has specific structure, look for exact match
-            retail_menu = page.locator("a.menu-toggle:has-text('Retail')").first
-            if not retail_menu.is_visible(timeout=3000):
-                retail_menu = page.locator("span:text-is('Retail')").first
-            if not retail_menu.is_visible(timeout=3000):
-                retail_menu = page.locator(".sidebar-menu a:has-text('Retail')").first
-            if not retail_menu.is_visible(timeout=3000):
-                # Try clicking on sidebar parent elements
-                retail_menu = page.locator("li.menu-item > a:has-text('Retail')").first
+            # Check URL to confirm login success
+            current_url = page.url
+            logger.info(f"Current URL after login: {current_url}")
             
-            safe_click(retail_menu, "Retail Menu")
-            time.sleep(1)
-            
-            close_any_modal(page)
-            
-            # Click on Reports tab/submenu
-            reports_link = page.locator("a[href*='report'], a:has-text('Reports')").first
-            if not reports_link.is_visible(timeout=5000):
-                reports_link = page.get_by_role("tab", name="Reports")
-            
-            safe_click(reports_link, "Reports")
+            # Wait for dashboard to load
             page.wait_for_load_state("networkidle")
-            time.sleep(3)
-
-            # 3. Open Invoice Detail Report
-            logger.info("Opening Invoice Detail Report...")
+            page.wait_for_timeout(5000)
             
-            invoice_link = None
-            for attempt in range(3):
-                # Try multiple selectors
-                selectors = [
-                    "a:has-text('Invoice Detail')",
-                    "a[title*='Invoice Detail']",
-                    "td a:has-text('Invoice Detail')",
-                ]
-                
-                for sel in selectors:
-                    links = page.locator(sel).all()
+            # Take another screenshot
+            page.screenshot(path=os.path.join(BASE_DIR, "dashboard_state.png"))
+            logger.info("Screenshot saved: dashboard_state.png")
+            
+            # Debug: List all visible buttons
+            logger.info("Listing visible buttons on page...")
+            buttons = page.locator("button").all()
+            for i, btn in enumerate(buttons[:10]):
+                try:
+                    if btn.is_visible():
+                        text = btn.text_content() or btn.get_attribute("aria-label") or "No text"
+                        logger.info(f"  Button {i}: {text[:50]}")
+                except:
+                    pass
+            
+            # Try to find and click Menu
+            logger.info("Looking for Menu button...")
+            
+            # Try multiple selectors for menu
+            menu_selectors = [
+                "button:has-text('Menu')",
+                "#menuButton",
+                ".menu-toggle",
+                "button[aria-label='Menu']",
+                ".navbar-toggle",
+                "button.btn-menu",
+            ]
+            
+            menu_clicked = False
+            for selector in menu_selectors:
+                try:
+                    menu_btn = page.locator(selector).first
+                    if menu_btn.is_visible(timeout=3000):
+                        menu_btn.click()
+                        menu_clicked = True
+                        logger.info(f"Clicked menu using: {selector}")
+                        break
+                except:
+                    continue
+            
+            if not menu_clicked:
+                logger.error("Could not find Menu button")
+                page.screenshot(path=os.path.join(BASE_DIR, "no_menu_error.png"))
+                raise Exception("Menu button not found")
+            
+            page.wait_for_timeout(2000)
+            
+            # Look for Retail in sidebar
+            logger.info("Looking for Retail menu...")
+            retail_selectors = [
+                "a:has-text('Retail'):not(:has-text('Invoice'))",
+                ".sidebar a:has-text('Retail')",
+                "nav a:has-text('Retail')",
+                "#sidebar a:has-text('Retail')",
+            ]
+            
+            retail_clicked = False
+            for selector in retail_selectors:
+                try:
+                    links = page.locator(selector).all()
                     for link in links:
                         if link.is_visible():
                             text = link.text_content() or ""
-                            if "invoice detail" in text.lower() and "product" not in text.lower():
-                                invoice_link = link
+                            # Only click if it's exactly "Retail" not "Retail Invoice"
+                            if text.strip().lower() == "retail" or text.strip() == "Retail":
+                                link.click()
+                                retail_clicked = True
+                                logger.info(f"Clicked Retail menu")
                                 break
-                    if invoice_link:
+                    if retail_clicked:
                         break
-                
-                if invoice_link:
-                    break
-                    
-                logger.warning(f"Attempt {attempt+1}: Invoice Detail link not found. Retrying...")
-                page.reload()
-                page.wait_for_load_state("networkidle")
-                time.sleep(5)
-
-            if not invoice_link:
-                # Debug: list all visible links
-                logger.error("Could not find Invoice Detail link. Available links:")
-                all_links = page.locator("a").all()
-                for link in all_links[:30]:
+                except:
+                    continue
+            
+            if not retail_clicked:
+                # Try clicking by exact text match
+                try:
+                    page.get_by_text("Retail", exact=True).first.click()
+                    retail_clicked = True
+                    logger.info("Clicked Retail using exact text match")
+                except Exception as e:
+                    logger.warning(f"Exact text match failed: {e}")
+            
+            page.wait_for_timeout(2000)
+            
+            # Click on Reports
+            logger.info("Looking for Reports...")
+            try:
+                reports_link = page.locator("a:has-text('Reports')").first
+                if reports_link.is_visible(timeout=5000):
+                    reports_link.click()
+                    logger.info("Clicked Reports")
+                else:
+                    # Try tab
+                    page.get_by_role("tab", name="Reports").click()
+                    logger.info("Clicked Reports tab")
+            except Exception as e:
+                logger.error(f"Could not click Reports: {e}")
+            
+            page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(3000)
+            
+            # Find Invoice Detail
+            logger.info("Looking for Invoice Detail report...")
+            invoice_link = None
+            
+            links = page.locator("a").all()
+            for link in links:
+                try:
                     if link.is_visible():
-                        logger.info(f"  - {link.text_content()}")
+                        text = (link.text_content() or "").strip().lower()
+                        if "invoice detail" in text and "product" not in text:
+                            invoice_link = link
+                            logger.info(f"Found Invoice Detail link: {text}")
+                            break
+                except:
+                    continue
+            
+            if not invoice_link:
+                logger.error("Invoice Detail link not found")
+                page.screenshot(path=os.path.join(BASE_DIR, "no_invoice_link.png"))
                 raise Exception("Invoice Detail link not found")
             
-            safe_click(invoice_link, "Invoice Detail Link")
+            invoice_link.click()
             page.wait_for_load_state("networkidle")
-            time.sleep(2)
-
-            # 4. Set Selection Criteria
-            criteria_tab = page.locator("a:has-text('Selection Criteria')").first
-            safe_click(criteria_tab, "Selection Criteria Tab")
-            time.sleep(1)
+            page.wait_for_timeout(2000)
             
-            # Set dates using Kendo DatePicker
-            page.wait_for_function('() => typeof $ !== "undefined" && $("#startDate").data && $("#startDate").data("kendoDatePicker")', timeout=10000)
+            # Set Selection Criteria
+            logger.info("Setting selection criteria...")
+            page.locator("a:has-text('Selection Criteria')").first.click()
+            page.wait_for_timeout(1000)
+            
+            # Set dates
+            page.wait_for_function('() => typeof $ !== "undefined" && $("#startDate").data && $("#startDate").data("kendoDatePicker")', timeout=15000)
             page.evaluate(f"""
                 const s = $("#startDate").data("kendoDatePicker");
                 const e = $("#endDate").data("kendoDatePicker");
@@ -197,63 +263,47 @@ def run_download():
 
             # Select Document Type
             try:
-                doc_dropdown = page.locator("button:has-text('select')").nth(3)
-                safe_click(doc_dropdown, "Doc Type Dropdown", timeout=5000)
-                time.sleep(0.5)
-                doc_option = page.locator(f"li:has-text('{DOCUMENT_TYPE}')").first
-                safe_click(doc_option, f"Option: {DOCUMENT_TYPE}")
+                page.locator("button:has-text('select')").nth(3).click()
+                page.wait_for_timeout(500)
+                page.locator(f"li:has-text('{DOCUMENT_TYPE}')").first.click()
+                logger.info(f"Document type set to {DOCUMENT_TYPE}")
             except Exception as e:
                 logger.warning(f"Could not set document type: {e}")
 
-            # Add Data Columns
-            logger.info("Selecting All Data Columns...")
+            # Add all data columns
             try:
-                columns_tab = page.locator("a:has-text('Add Data Columns')").first
-                safe_click(columns_tab, "Add Data Columns Tab")
-                time.sleep(1)
-                
-                count = page.evaluate("""() => {
+                page.locator("a:has-text('Add Data Columns')").first.click()
+                page.wait_for_timeout(1000)
+                page.evaluate("""() => {
                     const cbs = Array.from(document.querySelectorAll("input[type='checkbox'][name='addoptions']"));
-                    let clicked = 0;
-                    cbs.forEach(cb => {
-                        if (!cb.checked && !cb.disabled) {
-                            cb.click();
-                            clicked++;
-                        }
-                    });
-                    return clicked;
+                    cbs.forEach(cb => { if (!cb.checked && !cb.disabled) cb.click(); });
                 }""")
-                logger.info(f"Selected {count} additional columns.")
-                
-                # Go back to criteria
-                safe_click(page.locator("a:has-text('Selection Criteria')").first, "Back to Criteria")
+                page.locator("a:has-text('Selection Criteria')").first.click()
             except Exception as e:
-                logger.warning(f"Could not select all columns: {e}")
+                logger.warning(f"Could not select columns: {e}")
 
-            # 5. Generate Report
-            go_btn = page.locator("button:has-text('GO')").first
-            safe_click(go_btn, "GO Button")
+            # Generate report
+            logger.info("Generating report...")
+            page.locator("button:has-text('GO')").first.click()
             
+            # Wait for download button
             logger.info("Waiting for report to generate...")
             page.wait_for_function("""() => {
                 const btns = Array.from(document.querySelectorAll("button"));
                 return btns.some(b => ((b.innerText || "").trim().toLowerCase() === "download"));
-            }""", timeout=90000)
-            logger.info("Report generated, downloading...")
-
-            # 6. Download
+            }""", timeout=120000)
+            
+            # Download
+            logger.info("Downloading report...")
             with page.expect_download(timeout=120000) as download_info:
-                download_btn = page.locator("button:has-text('Download')").first
-                safe_click(download_btn, "Download Button")
+                page.locator("button:has-text('Download')").first.click()
             
             download = download_info.value
             original_name = download.suggested_filename
             temp_path = os.path.join(INPUT_REPORTS_DIR, original_name)
-            
             download.save_as(temp_path)
-            logger.info(f"Downloaded to: {temp_path}")
-
-            # Move to data_input
+            
+            # Move to final location
             final_path = os.path.join(DATA_INPUT_DIR, original_name)
             shutil.move(temp_path, final_path)
             
@@ -262,9 +312,7 @@ def run_download():
             
         except Exception as e:
             logger.error(f"Automation Failed: {e}")
-            screenshot_path = os.path.join(BASE_DIR, "error_screenshot.png")
-            page.screenshot(path=screenshot_path)
-            logger.info(f"Screenshot saved to: {screenshot_path}")
+            page.screenshot(path=os.path.join(BASE_DIR, "error_screenshot.png"))
             sys.exit(1)
         finally:
             browser.close()

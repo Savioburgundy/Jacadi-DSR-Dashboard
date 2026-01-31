@@ -5,7 +5,7 @@ import db from '../config/db';
 
 const router = Router();
 
-// Login Route (Final Stable - Hash)
+// Login Route
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -18,8 +18,9 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Check password_hash (Confirmed schema)
-        if (!await bcrypt.compare(password, user.password_hash)) {
+        // Check password (password column in DB)
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
@@ -31,6 +32,7 @@ router.post('/login', async (req, res) => {
 
         res.json({ token, user: { id: user.id, username: user.username, role: user.role, name: user.full_name } });
     } catch (error: any) {
+        console.error('Login error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });

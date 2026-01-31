@@ -36,7 +36,7 @@ export const runIngestion = async () => {
     }
 
     const inputDir = process.env.DATA_INPUT_DIR || path.join(__dirname, '../../data_input');
-    const archiveDir = process.env.DATA_ARCHIVE_DIR || 'D:\\Jacadi DSR\\data_archive';
+    const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
 
     if (!fs.existsSync(inputDir)) {
         console.warn(`Input directory ${inputDir} does not exist. Creating it...`);

@@ -108,6 +108,7 @@ Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data 
 - Configured Playwright automation
 - Tested full sync flow
 - Fixed layout to fit screen properly
+- Added Sync History panel with stats and log table
 
 ## Upcoming Tasks (P1)
 - Historical data backfill (Feb 26, 2025 onwards)

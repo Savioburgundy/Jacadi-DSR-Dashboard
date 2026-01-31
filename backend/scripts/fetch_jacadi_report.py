@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
 
 # --- CONFIG ---
-USERNAME = "JPHO@JP"
-PASSWORD = "jPHO@JP@657"
+USERNAME = os.environ.get("OLABI_USERNAME", "")
+PASSWORD = os.environ.get("OLABI_PASSWORD", "")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_REPORTS_DIR = os.path.join(BASE_DIR, "input_reports")
 DATA_INPUT_DIR = os.environ.get("DATA_INPUT_DIR", os.path.join(BASE_DIR, "data_input"))

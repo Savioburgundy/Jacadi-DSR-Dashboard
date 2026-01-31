@@ -64,12 +64,6 @@ export const runIngestion = async () => {
 
             if (existingLog) {
                 console.log(`⏭️  File ${file} already processed, skipping.`);
-
-                // Optional: Move to archive even if skipped, to clean up input folder
-                // But usually we leave it or move it. Let's move it to ensure input dir stays clean.
-                const archivePath = path.join(archiveDir, file);
-                if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
-                // fs.renameSync(filePath, archivePath); // Commented out to be safe, but typically we want to clear the folder.
                 continue;
             }
 

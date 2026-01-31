@@ -88,109 +88,76 @@ def run_download():
             page.wait_for_load_state("networkidle")
             logger.info(f"Logged in. URL: {page.url}")
             
-            # Take screenshot of dashboard
-            page.screenshot(path=os.path.join(BASE_DIR, "dashboard.png"))
+            # Click on Menu (found in header with title='Menu')
+            logger.info("Clicking Menu...")
+            menu_btn = page.locator("[title='Menu']").first
+            if menu_btn.is_visible(timeout=10000):
+                menu_btn.click()
+                page.wait_for_timeout(2000)
+                logger.info("Menu clicked")
             
-            # Click on the sidebar toggle (lightning bolt or similar)
-            logger.info("Opening sidebar...")
-            try:
-                # Try clicking the sidebar toggle
-                sidebar_toggle = page.locator(".sidebar-toggle, .menu-toggle, [class*='sidebar'], [class*='menu-toggle']").first
-                if sidebar_toggle.is_visible(timeout=5000):
-                    sidebar_toggle.click()
-                    page.wait_for_timeout(2000)
-            except:
-                pass
+            # Take screenshot to see menu
+            page.screenshot(path=os.path.join(BASE_DIR, "menu_open.png"))
             
-            # Look for Reports/grid icon in top navigation
-            logger.info("Looking for reports navigation...")
+            # Look for Retail in the menu
+            logger.info("Looking for Retail in menu...")
+            retail_btn = page.locator("button:has-text('Retail'), a:has-text('Retail'), li:has-text('Retail')").first
+            if retail_btn.is_visible(timeout=10000):
+                retail_btn.click()
+                page.wait_for_timeout(2000)
+                logger.info("Retail clicked")
             
-            # Try clicking on the reports/grid icon in header
-            try:
-                # Look for icon that looks like reports or grid
-                header_icons = page.locator("header a, header button, .navbar a, .navbar button, .header-right a, .header-right button, .topbar a, .topbar button").all()
-                logger.info(f"Found {len(header_icons)} header elements")
-                
-                for icon in header_icons:
-                    if icon.is_visible():
-                        title = icon.get_attribute("title") or ""
-                        classes = icon.get_attribute("class") or ""
-                        text = icon.inner_text()
-                        logger.info(f"  Header element: title='{title}' class='{classes[:50]}' text='{text[:30]}'")
-            except Exception as e:
-                logger.info(f"Header inspection error: {e}")
+            page.screenshot(path=os.path.join(BASE_DIR, "after_retail.png"))
             
-            # Try navigating directly to reports URL
-            logger.info("Trying direct navigation to retail reports...")
-            page.goto("https://login.olabi.ooo/retail/reports", wait_until="domcontentloaded")
-            page.wait_for_timeout(5000)
-            page.screenshot(path=os.path.join(BASE_DIR, "reports_page.png"))
-            
-            current_url = page.url
-            logger.info(f"Current URL: {current_url}")
-            
-            # If not on reports, try finding Retail in sidebar/menu
-            if "reports" not in current_url.lower():
-                logger.info("Direct navigation didn't work, trying sidebar...")
-                
-                # Look for any element with "Retail" text
-                retail_elements = page.locator("*:has-text('Retail')").all()
-                logger.info(f"Found {len(retail_elements)} elements with 'Retail'")
-                
-                # Filter for visible, clickable ones
-                for elem in retail_elements[:20]:
-                    try:
-                        if elem.is_visible():
-                            tag = elem.evaluate("el => el.tagName")
-                            text = elem.inner_text()[:50]
-                            if tag.lower() in ['a', 'button', 'li', 'div', 'span']:
-                                if text.strip().lower() == 'retail' or text.strip() == 'Retail':
-                                    logger.info(f"Clicking Retail: tag={tag} text='{text}'")
-                                    elem.click()
-                                    page.wait_for_timeout(2000)
-                                    break
-                    except:
-                        continue
-                
-                # Now look for Reports
-                page.screenshot(path=os.path.join(BASE_DIR, "after_retail.png"))
-                
-                reports_link = page.locator("a:has-text('Reports'), button:has-text('Reports'), *[role='tab']:has-text('Reports')").first
-                if reports_link.is_visible(timeout=10000):
-                    reports_link.click()
-                    page.wait_for_timeout(3000)
+            # Look for Reports tab/link
+            logger.info("Looking for Reports...")
+            reports_link = page.locator("a:has-text('Reports'), [role='tab']:has-text('Reports')").first
+            if reports_link.is_visible(timeout=10000):
+                reports_link.click()
+                page.wait_for_timeout(3000)
+                logger.info("Reports clicked")
             
             page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(5000)  # Extra wait for reports to load
             page.screenshot(path=os.path.join(BASE_DIR, "reports_loaded.png"))
             
             # Find Invoice Detail
             logger.info("Looking for Invoice Detail...")
+            
+            # Wait for reports table to load
+            page.wait_for_timeout(3000)
+            
             all_links = page.locator("a").all()
             invoice_link = None
+            logger.info(f"Found {len(all_links)} links")
+            
             for link in all_links:
                 try:
                     if link.is_visible():
-                        text = link.inner_text().strip().lower()
-                        if "invoice detail" in text and "product" not in text:
+                        text = link.inner_text().strip()
+                        if "invoice detail" in text.lower() and "product" not in text.lower():
                             invoice_link = link
                             logger.info(f"Found Invoice Detail: {text}")
                             break
                 except:
                     continue
             
-            if invoice_link:
-                invoice_link.click()
-            else:
+            if not invoice_link:
                 # List available links for debugging
-                logger.info("Invoice Detail not found. Available links:")
-                for link in all_links[:30]:
+                logger.info("Invoice Detail not found. Visible links:")
+                count = 0
+                for link in all_links:
                     try:
-                        if link.is_visible():
-                            logger.info(f"  - {link.inner_text()[:50]}")
+                        if link.is_visible() and count < 40:
+                            text = link.inner_text().strip()
+                            if text:
+                                logger.info(f"  - {text[:60]}")
+                                count += 1
                     except:
                         pass
                 raise Exception("Invoice Detail link not found")
             
+            invoice_link.click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2000)
             

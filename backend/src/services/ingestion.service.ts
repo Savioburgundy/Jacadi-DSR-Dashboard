@@ -53,6 +53,7 @@ export const runIngestion = async () => {
     }
 
     console.log(`📂 Found ${files.length} files to process: ${files.join(', ')}`);
+    const logsCollection = getCollection('ingestion_logs');
 
     for (const file of files) {
         const filePath = path.join(inputDir, file);

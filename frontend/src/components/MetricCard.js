@@ -10,7 +10,8 @@ export const MetricCard = ({
   suffix = '',
   loading = false,
   className = '',
-  delay = 0
+  delay = 0,
+  'data-testid': testId
 }) => {
   const isPositive = change > 0;
   const isNegative = change < 0;

@@ -1,75 +1,114 @@
 # Jacadi DSR Dashboard - Product Requirements Document
 
 ## Original Problem Statement
-Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" - a high-performance retail analytics tool that automates data ingestion from a portal and visualizes efficiency metrics with dark glassmorphism design.
+Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with the following requirements:
+- Tech Stack: Node.js/Express/TypeScript backend + React/Vite/TypeScript frontend + SQLite database
+- Multi-store CSV data ingestion from Olabi portal
+- Real-time analytics dashboards with filters
+- JWT authentication with role-based access
+- 6:00 AM daily cron job for automated data sync
+- Premium dark-mode/glassmorphism aesthetic
 
-## Architecture
-- **Frontend**: React with Tailwind CSS, Recharts for visualization
-- **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **Authentication**: JWT-based custom auth
+## Current Status: MIGRATION COMPLETE ✅
 
-## User Personas
-1. **Admin User**: Full access to upload CSV data, view all metrics, manage sync operations
-2. **Regular User**: View-only access to dashboard metrics and performance data
+### What's Been Implemented (Jan 31, 2026)
 
-## Core Requirements (Static)
-- [x] JWT authentication with admin/user roles
-- [x] Dashboard with 7 key metrics (Net Revenue, Net Units, Transactions, ATV, Basket Size, Multies %, Conversion %)
-- [x] MTD vs Last Month and YTD vs Last Year comparisons
-- [x] Revenue trend charts with Recharts
-- [x] Store and channel filters
-- [x] Sales CSV upload with deduplication by invoice number
-- [x] Footfall CSV upload for conversion calculation
-- [x] Dark glassmorphism premium design
+#### Infrastructure Migration
+- ✅ Migrated from incorrect Python/FastAPI/MongoDB stack to user's Node.js/Express/SQLite stack
+- ✅ Extracted and deployed user's source code from `Jacadi DSR_latest.rar`
+- ✅ Configured supervisor for Node.js backend (ts-node-dev)
+- ✅ Configured Vite frontend with proper host/port settings
+- ✅ Fixed database path from Windows to Linux relative path
+- ✅ Copied populated database with 4,793 transactions and sales data
 
-## What's Been Implemented (Jan 31, 2026)
-### Backend
-- FastAPI server with /api prefix routing
-- JWT authentication (register, login, verify)
-- Dashboard metrics endpoints with filtering
-- Sales CSV upload with deduplication logic (IV, IR transaction types)
-- Footfall CSV upload
-- Sync logs tracking
-- Store/channel breakdown endpoints
+#### Authentication System
+- ✅ JWT-based authentication working
+- ✅ Login with email (admin@example.com / password)
+- ✅ Role-based access control (admin role)
+- ✅ Auth routes: POST /api/auth/login, GET /api/auth/me
 
-### Frontend
-- Login/Register page with glassmorphism design
-- Protected routes with AuthContext
-- Executive Dashboard with 7 metric cards
-- MTD/YTD comparison cards
-- Revenue trend area chart
-- Pie charts for store/channel breakdown
-- Performance analysis page with tables
-- Data Management page with CSV upload buttons
-- Sidebar navigation with active states
+#### Dashboard Features
+- ✅ Real-time sales analytics
+- ✅ Total Revenue display (₹59,73,700+)
+- ✅ Transaction count (495)
+- ✅ Average Transaction Value (₹12,068)
+- ✅ Multi-store breakdown:
+  - Jacadi Palladium
+  - Jacadi MOA
+  - Shopify Webstore
+- ✅ MTD vs PM comparisons
+- ✅ YTD sales tracking
+- ✅ Multiple dashboard views:
+  - Retail + Whatsapp Sales
+  - Whatsapp Sales (Conversions)
+  - Omni Channel TM vs LM
+  - Analytics
 
-## Store/Channel Configuration
-- **Stores**: Jacadi Palladium, Jacadi MOA, Shopify Webstore
-- **Channels**: Store, E-com, WhatsApp
+#### Database Schema
+- `users` - User authentication
+- `sales_transactions` - Sales data
+- `location_efficiency` - Store efficiency metrics
+- `footfall` - Store footfall data
+- `whatsapp_sales_report` - WhatsApp channel sales
+- Multiple views for aggregated analytics
 
-## Prioritized Backlog
+### Login Credentials
+- Email: `admin@example.com`
+- Password: `password`
 
-### P0 (Critical) - DONE
-- [x] Core authentication flow
-- [x] Dashboard metrics calculation
-- [x] CSV upload functionality
-- [x] Basic filtering
+### API Endpoints
+- `GET /api/health` - Health check
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Current user
+- `GET /api/analytics/summary` - Dashboard summary
+- `GET /api/dashboards/*` - Dashboard data
+- `POST /api/ingest/*` - Data ingestion
 
-### P1 (High Priority) - Next Phase
-- [ ] Olabi portal automation with Playwright
-- [ ] Database backup before sync
-- [ ] 6:00 AM daily cron job for automation
-- [ ] Export reports to PDF/Excel
+### Architecture
+```
+/app/
+├── backend/           # Node.js/Express/TypeScript
+│   ├── src/
+│   │   ├── app.ts           # Main entry
+│   │   ├── config/db.ts     # SQLite connection
+│   │   ├── routes/          # API routes
+│   │   ├── services/        # Business logic
+│   │   └── middleware/      # Auth middleware
+│   ├── data.db              # SQLite database
+│   └── package.json
+├── frontend/          # React/Vite/TypeScript
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   └── services/api.ts
+│   └── package.json
+└── memory/PRD.md
+```
 
-### P2 (Medium Priority)
-- [ ] Date range preset buttons (Today, Last 7 days, MTD, YTD)
-- [ ] Drill-down to individual transactions
-- [ ] Email notifications on sync completion
-- [ ] User management panel for admin
+## Upcoming Tasks (P1)
 
-## Next Tasks
-1. Implement Playwright automation for Olabi portal scraping
-2. Add backup functionality before data sync
-3. Set up node-cron for scheduled daily automation
-4. Add export functionality for reports
+### 1. Playwright Automation for Olabi Portal
+- Implement automated CSV download from https://login.olabi.ooo/
+- Credentials: JPHO@JP / jPHO@JP@657
+- Historical data fetch from Feb 26, 2025
+
+### 2. Data Ingestion Pipeline
+- Incremental upsert logic (delete existing, insert new)
+- CSV parsing and validation
+- Database backup before ingestion
+
+### 3. Cron Job Scheduler
+- 6:00 AM daily automation trigger
+- DB backup → Download CSV → Ingest data flow
+
+## Future Tasks (P2)
+- Dashboard drill-down filters
+- Database backup automation
+- User management UI improvements
+- Export to Excel functionality
+
+## Technical Notes
+- Frontend URL: https://sales-metrics-97.preview.emergentagent.com
+- Backend internal port: 8001
+- Frontend internal port: 3000
+- Database: SQLite at /app/backend/data.db

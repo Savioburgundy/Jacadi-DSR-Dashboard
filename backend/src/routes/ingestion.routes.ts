@@ -18,7 +18,7 @@ router.post('/run', authenticateJWT, authorizeRole(['admin']), async (req, res) 
 
 router.get('/logs', authenticateJWT, authorizeRole(['admin']), async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM ingestion_logs ORDER BY ingested_at DESC LIMIT 50');
+        const result = await db.query('SELECT * FROM ingestion_logs ORDER BY created_at DESC LIMIT 50');
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });

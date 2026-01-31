@@ -1,114 +1,121 @@
 # Jacadi DSR Dashboard - Product Requirements Document
 
 ## Original Problem Statement
-Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with the following requirements:
-- Tech Stack: Node.js/Express/TypeScript backend + React/Vite/TypeScript frontend + SQLite database
-- Multi-store CSV data ingestion from Olabi portal
-- Real-time analytics dashboards with filters
-- JWT authentication with role-based access
-- 6:00 AM daily cron job for automated data sync
-- Premium dark-mode/glassmorphism aesthetic
+Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data sync from Olabi portal.
 
-## Current Status: MIGRATION COMPLETE ✅
+## Current Status: FUNCTIONAL ✅
 
 ### What's Been Implemented (Jan 31, 2026)
 
-#### Infrastructure Migration
-- ✅ Migrated from incorrect Python/FastAPI/MongoDB stack to user's Node.js/Express/SQLite stack
-- ✅ Extracted and deployed user's source code from `Jacadi DSR_latest.rar`
-- ✅ Configured supervisor for Node.js backend (ts-node-dev)
-- ✅ Configured Vite frontend with proper host/port settings
-- ✅ Fixed database path from Windows to Linux relative path
-- ✅ Copied populated database with 4,793 transactions and sales data
-
-#### Authentication System
-- ✅ JWT-based authentication working
-- ✅ Login with email (admin@example.com / password)
-- ✅ Role-based access control (admin role)
-- ✅ Auth routes: POST /api/auth/login, GET /api/auth/me
-
-#### Dashboard Features
-- ✅ Real-time sales analytics
-- ✅ Total Revenue display (₹59,73,700+)
-- ✅ Transaction count (495)
-- ✅ Average Transaction Value (₹12,068)
-- ✅ Multi-store breakdown:
+#### Core Dashboard
+- ✅ Full-width responsive layout
+- ✅ Dark/glassmorphism UI theme
+- ✅ Multi-store sales breakdown:
   - Jacadi Palladium
   - Jacadi MOA
   - Shopify Webstore
-- ✅ MTD vs PM comparisons
-- ✅ YTD sales tracking
+- ✅ KPI Cards: Revenue, Transactions, ATV, Active Stores
 - ✅ Multiple dashboard views:
   - Retail + Whatsapp Sales
-  - Whatsapp Sales (Conversions)
+  - Retail + Whatsapp Sales (Conversions)
+  - Whatsapp Sale
   - Omni Channel TM vs LM
+  - Omni Channel
+  - Retail + Omni
   - Analytics
 
-#### Database Schema
-- `users` - User authentication
-- `sales_transactions` - Sales data
-- `location_efficiency` - Store efficiency metrics
-- `footfall` - Store footfall data
-- `whatsapp_sales_report` - WhatsApp channel sales
-- Multiple views for aggregated analytics
+#### Authentication
+- ✅ JWT-based login
+- ✅ Role-based access (admin role for sync)
+- ✅ Credentials: `admin@example.com` / `password`
 
-### Login Credentials
-- Email: `admin@example.com`
-- Password: `password`
+#### Data Sync Automation (Sync Data Button)
+- ✅ Playwright automation script for Olabi portal
+- ✅ Login, navigate to Reports, download Invoice Detail CSV
+- ✅ DB backup before ingestion
+- ✅ CSV parsing and ingestion pipeline
+- ✅ 6:00 AM daily cron job configured
 
-### API Endpoints
-- `GET /api/health` - Health check
+#### Technical Stack
+- **Backend**: Node.js + Express + TypeScript
+- **Frontend**: React + Vite + TypeScript + TailwindCSS
+- **Database**: SQLite (13MB with historical data)
+- **Automation**: Python + Playwright
+
+### Olabi Portal Credentials
+- URL: https://login.olabi.ooo/
+- Username: JPHO@JP
+- Password: jPHO@JP@657
+
+### Key API Endpoints
 - `POST /api/auth/login` - User login
 - `GET /api/auth/me` - Current user
-- `GET /api/analytics/summary` - Dashboard summary
-- `GET /api/dashboards/*` - Dashboard data
-- `POST /api/ingest/*` - Data ingestion
+- `POST /api/ingest/run` - Trigger manual sync (Admin only)
+- `POST /api/ingest/download` - Download CSV only
+- `GET /api/dashboards/default/*` - Dashboard data
+- `GET /api/analytics/summary` - KPI summary
 
-### Architecture
+### Database Schema (SQLite)
+- `users` - Authentication
+- `sales_transactions` - Sales data
+- `footfall` - Store footfall
+- `location_efficiency` - Efficiency metrics
+- `whatsapp_sales_report` - WhatsApp channel
+- `ingestion_logs` - Sync history
+- Multiple views for analytics
+
+### File Structure
 ```
 /app/
-├── backend/           # Node.js/Express/TypeScript
+├── backend/                    # Node.js/Express/TypeScript
 │   ├── src/
-│   │   ├── app.ts           # Main entry
-│   │   ├── config/db.ts     # SQLite connection
-│   │   ├── routes/          # API routes
-│   │   ├── services/        # Business logic
-│   │   └── middleware/      # Auth middleware
-│   ├── data.db              # SQLite database
-│   └── package.json
-├── frontend/          # React/Vite/TypeScript
+│   │   ├── app.ts              # Main entry
+│   │   ├── config/db.ts        # SQLite connection
+│   │   ├── routes/             # API routes
+│   │   ├── services/           # Business logic
+│   │   │   ├── etl.service.ts  # CSV processing
+│   │   │   ├── ingestion.service.ts
+│   │   │   ├── backup.service.ts
+│   │   │   └── scheduler.service.ts
+│   │   └── middleware/
+│   ├── scripts/
+│   │   └── fetch_jacadi_report.py  # Playwright automation
+│   ├── data.db                 # SQLite database
+│   ├── data_input/             # Downloaded CSVs
+│   ├── data_archive/           # Processed CSVs
+│   └── backups/                # DB backups
+├── frontend/                   # React/Vite/TypeScript
 │   ├── src/
 │   │   ├── App.tsx
-│   │   ├── components/
+│   │   ├── components/dashboard/
 │   │   └── services/api.ts
 │   └── package.json
 └── memory/PRD.md
 ```
 
+### Sync Data Flow
+1. User clicks "Sync Data" button (Admin only)
+2. Backend creates DB restore point
+3. Playwright script logs into Olabi portal
+4. Downloads Invoice Detail CSV for yesterday
+5. CSV moved to data_input folder
+6. ETL service processes and ingests data
+7. File archived after successful ingestion
+
+### Completed This Session
+- Migrated from Python/FastAPI/MongoDB to Node.js/Express/SQLite
+- Fixed Windows paths to Linux paths
+- Configured Playwright automation
+- Tested full sync flow
+- Fixed layout to fit screen properly
+
 ## Upcoming Tasks (P1)
-
-### 1. Playwright Automation for Olabi Portal
-- Implement automated CSV download from https://login.olabi.ooo/
-- Credentials: JPHO@JP / jPHO@JP@657
-- Historical data fetch from Feb 26, 2025
-
-### 2. Data Ingestion Pipeline
-- Incremental upsert logic (delete existing, insert new)
-- CSV parsing and validation
-- Database backup before ingestion
-
-### 3. Cron Job Scheduler
-- 6:00 AM daily automation trigger
-- DB backup → Download CSV → Ingest data flow
+- Historical data backfill (Feb 26, 2025 onwards)
+- Error handling improvements for sync
+- Sync status notifications in UI
 
 ## Future Tasks (P2)
-- Dashboard drill-down filters
-- Database backup automation
-- User management UI improvements
+- Email alerts on sync completion/failure
+- Dashboard drill-down filters enhancement
 - Export to Excel functionality
-
-## Technical Notes
-- Frontend URL: https://sales-metrics-97.preview.emergentagent.com
-- Backend internal port: 8001
-- Frontend internal port: 3000
-- Database: SQLite at /app/backend/data.db
+- User management improvements

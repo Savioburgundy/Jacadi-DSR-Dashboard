@@ -10,7 +10,8 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+        // Support login by username OR email
+        const result = await db.query('SELECT * FROM users WHERE email = ? OR username = ?', [email, email]);
         const user = result.rows[0];
 
         if (!user) {

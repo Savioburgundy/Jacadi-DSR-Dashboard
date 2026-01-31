@@ -92,7 +92,7 @@ const seedMetrics = async () => {
 
 const seedInvoiceData = async () => {
     // Check for invoice file in input_reports first
-    const inputReportsDir = path.join('D:\\Jacadi DSR\\input_reports');
+    const inputReportsDir = process.env.DATA_INPUT_DIR || path.join(__dirname, '../../data_input');
     // Get ALL invoice files
     let invoiceFiles: string[] = [];
 

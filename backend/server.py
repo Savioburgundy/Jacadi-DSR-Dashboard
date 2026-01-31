@@ -750,6 +750,108 @@ async def get_channels():
     """Get available sales channels"""
     return ["Store", "E-com", "WhatsApp"]
 
+# ============== SYNC AUTOMATION ==============
+
+@api_router.post("/data/trigger-sync")
+async def trigger_portal_sync(
+    start_date: str = Query(default="2025-02-26"),
+    end_date: str = Query(default=None),
+    current_user: dict = Depends(require_admin)
+):
+    """
+    Trigger data sync from Olabi portal.
+    Note: Portal automation requires manual browser access due to complex navigation.
+    This endpoint logs the sync attempt and provides instructions.
+    """
+    import subprocess
+    from datetime import datetime, timezone
+    
+    if end_date is None:
+        end_date = datetime.now().strftime("%Y-%m-%d")
+    
+    # Create sync log
+    sync_id = str(uuid.uuid4())
+    sync_log = {
+        "id": sync_id,
+        "sync_type": "portal_automation",
+        "status": "initiated",
+        "records_processed": 0,
+        "error_message": None,
+        "triggered_by": current_user["email"],
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": None,
+        "date_range": f"{start_date} to {end_date}"
+    }
+    await db.sync_logs.insert_one(sync_log)
+    
+    # Try to run automation script
+    try:
+        result = subprocess.run(
+            ["python", "olabi_automation.py", "--start-date", start_date, "--end-date", end_date],
+            cwd="/app/backend",
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        
+        if result.returncode == 0:
+            await db.sync_logs.update_one(
+                {"id": sync_id},
+                {"$set": {
+                    "status": "completed",
+                    "completed_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            return {
+                "message": "Sync completed successfully",
+                "sync_id": sync_id,
+                "output": result.stdout[-500:] if result.stdout else ""
+            }
+        else:
+            error_msg = result.stderr[-500:] if result.stderr else "Unknown error"
+            await db.sync_logs.update_one(
+                {"id": sync_id},
+                {"$set": {
+                    "status": "failed",
+                    "error_message": error_msg,
+                    "completed_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            return {
+                "message": "Sync failed - portal may require manual access",
+                "sync_id": sync_id,
+                "error": error_msg,
+                "instructions": "Please download the CSV manually from the Olabi portal (Retail -> Reports -> Invoice Detail) and upload via Data Management page."
+            }
+    except subprocess.TimeoutExpired:
+        await db.sync_logs.update_one(
+            {"id": sync_id},
+            {"$set": {
+                "status": "timeout",
+                "error_message": "Automation timed out",
+                "completed_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        return {
+            "message": "Sync timed out",
+            "sync_id": sync_id,
+            "instructions": "Please download the CSV manually from the Olabi portal and upload via Data Management page."
+        }
+    except Exception as e:
+        await db.sync_logs.update_one(
+            {"id": sync_id},
+            {"$set": {
+                "status": "error",
+                "error_message": str(e),
+                "completed_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        return {
+            "message": f"Sync error: {str(e)}",
+            "sync_id": sync_id,
+            "instructions": "Please download the CSV manually from the Olabi portal and upload via Data Management page."
+        }
+
 # ============== HEALTH CHECK ==============
 
 @api_router.get("/")

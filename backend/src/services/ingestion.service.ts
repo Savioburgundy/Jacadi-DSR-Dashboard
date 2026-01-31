@@ -10,7 +10,8 @@ export const downloadJacadiReport = async () => {
         const scriptPath = path.join(__dirname, '../../scripts/fetch_jacadi_report.py');
         console.log(`Triggering automation script: ${scriptPath}`);
 
-        exec(`python "${scriptPath}"`, (error, stdout, stderr) => {
+        // Use the venv Python which has Playwright installed
+        exec(`/root/.venv/bin/python "${scriptPath}"`, (error, stdout, stderr) => {
             if (error) {
                 console.error(`Automation Error: ${error.message}`);
                 reject(error);

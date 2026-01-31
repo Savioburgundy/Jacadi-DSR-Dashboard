@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import path from 'path';
 
 // FORCE ABSOLUTE PATH to populated DB
-const DB_PATH = 'd:\\Jacadi DSR\\server\\data.db';
+const DB_PATH = path.join(__dirname, '../../data.db');
 console.log(`[DB CONFIG] Connecting to: ${DB_PATH}`);
 
 const db = new sqlite3.Database(DB_PATH, (err: any) => {

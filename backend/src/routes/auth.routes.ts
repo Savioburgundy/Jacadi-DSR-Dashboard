@@ -10,16 +10,16 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Support login by username OR email
-        const result = await db.query('SELECT * FROM users WHERE email = ? OR username = ?', [email, email]);
+        // Find user by email
+        const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
         const user = result.rows[0];
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Check password (password column in DB)
-        const isValid = await bcrypt.compare(password, user.password);
+        // Check password_hash
+        const isValid = await bcrypt.compare(password, user.password_hash);
         if (!isValid) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        res.json({ token, user: { id: user.id, username: user.username, role: user.role, name: user.full_name } });
+        res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.full_name } });
     } catch (error: any) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -42,7 +42,7 @@ router.get('/me', async (req: any, res) => {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-        const result = await db.query('SELECT id, username, role, full_name, email FROM users WHERE id = ?', [req.user.id]);
+        const result = await db.query('SELECT id, email, role, full_name FROM users WHERE id = ?', [req.user.id]);
         res.json(result.rows[0]);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });

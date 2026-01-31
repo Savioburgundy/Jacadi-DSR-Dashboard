@@ -80,7 +80,13 @@ export const runIngestion = async () => {
             const rowCount = await processInvoiceCSV(filePath);
 
             // 3. Log success
-            await db.query('INSERT INTO ingestion_logs (id, filename, status, rows_added) VALUES (?, ?, ?, ?)', [uuidv4(), file, 'success', rowCount]);
+            await logsCollection.insertOne({
+                id: uuidv4(),
+                filename: file,
+                status: 'success',
+                rows_added: rowCount,
+                created_at: new Date()
+            });
             console.log(`✅ Successfully ingested ${rowCount} rows from ${file}`);
 
             // 4. Move to archive

@@ -107,7 +107,13 @@ export const runIngestion = async () => {
 
         } catch (err) {
             console.error(`❌ Error processing ${file}:`, err);
-            await db.query('INSERT INTO ingestion_logs (id, filename, status, error_message) VALUES (?, ?, ?, ?)', [uuidv4(), file, 'failed', (err as Error).message]);
+            await logsCollection.insertOne({
+                id: uuidv4(),
+                filename: file,
+                status: 'failed',
+                error_message: (err as Error).message,
+                created_at: new Date()
+            });
             // Do not move to archive if failed, so it can be retried or inspected?
             // Or move to a 'failed' folder? For now, leave in input.
         }

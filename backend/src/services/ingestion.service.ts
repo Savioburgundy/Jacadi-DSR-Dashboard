@@ -107,8 +107,6 @@ export const runIngestion = async () => {
                 error_message: (err as Error).message,
                 created_at: new Date()
             });
-            // Do not move to archive if failed, so it can be retried or inspected?
-            // Or move to a 'failed' folder? For now, leave in input.
         }
     }
 };

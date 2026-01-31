@@ -3,14 +3,14 @@ import time
 import shutil
 import logging
 import sys
-import re
+import argparse
 from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
 
 # --- CONFIG ---
 USERNAME = "JPHO@JP"
 PASSWORD = "jPHO@JP@657"
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # server/backend directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_REPORTS_DIR = os.path.join(BASE_DIR, "input_reports")
 DATA_INPUT_DIR = os.environ.get("DATA_INPUT_DIR", os.path.join(BASE_DIR, "data_input"))
 DOCUMENT_TYPE = "Sales Including Returns"
@@ -20,17 +20,15 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 def clean_input_dir():
-    """Ensure directory exists"""
-    if not os.path.exists(INPUT_REPORTS_DIR):
-        os.makedirs(INPUT_REPORTS_DIR)
-        logger.info(f"Created {INPUT_REPORTS_DIR}")
-    if not os.path.exists(DATA_INPUT_DIR):
-        os.makedirs(DATA_INPUT_DIR)
-        logger.info(f"Created {DATA_INPUT_DIR}")
+    """Ensure directories exist"""
+    for dir_path in [INPUT_REPORTS_DIR, DATA_INPUT_DIR]:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+            logger.info(f"Created {dir_path}")
 
-def safe_click(locator, desc=""):
+def safe_click(locator, desc="", timeout=40000):
     try:
-        locator.wait_for(state="visible", timeout=40000)
+        locator.wait_for(state="visible", timeout=timeout)
         locator.click(force=True)
         time.sleep(0.5)
         logger.info(f"Clicked: {desc}")
@@ -47,12 +45,9 @@ def close_any_modal(page):
         page.keyboard.press("Escape")
     except: pass
 
-import argparse
-
 def run_download():
     clean_input_dir()
     
-    # Parse Arguments
     parser = argparse.ArgumentParser(description='Download Jacadi Report')
     parser.add_argument('--date', type=str, help='Date in YYYY-MM-DD format', default=None)
     args = parser.parse_args()
@@ -64,11 +59,10 @@ def run_download():
             logger.error("Invalid date format. Use YYYY-MM-DD")
             sys.exit(1)
     else:
-        # Default to Yesterday
         target_date = datetime.now() - timedelta(days=1)
         
-    date_str = target_date.strftime("%Y-%m-%d")  # API format
-    dmy_str = target_date.strftime("%d/%m/%Y")   # UI format
+    date_str = target_date.strftime("%Y-%m-%d")
+    dmy_str = target_date.strftime("%d/%m/%Y")
     
     logger.info(f"Starting Download for Date: {dmy_str}")
 
@@ -82,7 +76,6 @@ def run_download():
             logger.info("Logging in...")
             page.goto("https://login.olabi.ooo/", timeout=60000)
             
-            # Handle any initial popups
             try:
                 page.get_by_role("button").first.click(timeout=3000)
             except: pass
@@ -99,104 +92,125 @@ def run_download():
             except: pass
 
             # Verify Login
-            page.get_by_role("button", name="Menu").wait_for(timeout=30000)
-            logger.info("Login Successful")
-
-            # 2. Navigate to Reports
-            close_any_modal(page)
-            
-            menu_btn = page.get_by_role("button", name="Menu")
-            if not menu_btn.is_visible():
-                menu_btn = page.locator(".sidebar-toggle")
-            
-            safe_click(menu_btn, "Menu")
-            time.sleep(1)
-
-            retail_btn = page.get_by_role("button", name="Retail")
-            if not retail_btn.is_visible():
-                retail_btn = page.locator("li:has-text('Retail')")
-            
-            safe_click(retail_btn, "Retail")
-            time.sleep(1)
-            
-            close_any_modal(page)
-            
-            reports_tab = page.get_by_role("tab", name="Reports")
-            if not reports_tab.is_visible():
-                reports_tab = page.locator("a:has-text('Reports')")
-            
-            safe_click(reports_tab, "Reports Tab")
-            page.wait_for_load_state("networkidle")
             page.wait_for_timeout(3000)
+            logger.info("Login Successful - waiting for page to stabilize")
 
-            # 3. Open Invoice Detail
+            # 2. Navigate to Reports via sidebar
+            close_any_modal(page)
+            time.sleep(2)
+            
+            # Click the Menu/hamburger button to open sidebar
+            menu_btn = page.locator("button:has-text('Menu')").first
+            if not menu_btn.is_visible(timeout=5000):
+                menu_btn = page.locator(".navbar-toggle, .sidebar-toggle, button.btn-toggle").first
+            
+            safe_click(menu_btn, "Menu Button")
+            time.sleep(2)
+
+            # Look for Retail in the main menu - use more specific selector
+            # The sidebar menu has specific structure, look for exact match
+            retail_menu = page.locator("a.menu-toggle:has-text('Retail')").first
+            if not retail_menu.is_visible(timeout=3000):
+                retail_menu = page.locator("span:text-is('Retail')").first
+            if not retail_menu.is_visible(timeout=3000):
+                retail_menu = page.locator(".sidebar-menu a:has-text('Retail')").first
+            if not retail_menu.is_visible(timeout=3000):
+                # Try clicking on sidebar parent elements
+                retail_menu = page.locator("li.menu-item > a:has-text('Retail')").first
+            
+            safe_click(retail_menu, "Retail Menu")
+            time.sleep(1)
+            
+            close_any_modal(page)
+            
+            # Click on Reports tab/submenu
+            reports_link = page.locator("a[href*='report'], a:has-text('Reports')").first
+            if not reports_link.is_visible(timeout=5000):
+                reports_link = page.get_by_role("tab", name="Reports")
+            
+            safe_click(reports_link, "Reports")
+            page.wait_for_load_state("networkidle")
+            time.sleep(3)
+
+            # 3. Open Invoice Detail Report
             logger.info("Opening Invoice Detail Report...")
             
-            def find_report_link(name):
-                links = page.get_by_role("link", name=name, exact=True).all()
-                for l in links:
-                    if l.is_visible():
-                        logger.info(f"Found visible exact link: {name}")
-                        return l
-                
-                links = page.locator(f"a:has-text('{name}')").all()
-                for l in links:
-                    if l.is_visible() and name.lower() in (l.text_content() or "").lower():
-                        logger.info(f"Found visible fuzzy link: {l.text_content()}")
-                        return l
-
-                return None
-
-            link = None
+            invoice_link = None
             for attempt in range(3):
-                link = find_report_link("Invoice Detail")
-                if link: break
+                # Try multiple selectors
+                selectors = [
+                    "a:has-text('Invoice Detail')",
+                    "a[title*='Invoice Detail']",
+                    "td a:has-text('Invoice Detail')",
+                ]
                 
-                logger.warning(f"Attempt {attempt+1}: Visible link not found. Reloading...")
+                for sel in selectors:
+                    links = page.locator(sel).all()
+                    for link in links:
+                        if link.is_visible():
+                            text = link.text_content() or ""
+                            if "invoice detail" in text.lower() and "product" not in text.lower():
+                                invoice_link = link
+                                break
+                    if invoice_link:
+                        break
+                
+                if invoice_link:
+                    break
+                    
+                logger.warning(f"Attempt {attempt+1}: Invoice Detail link not found. Retrying...")
                 page.reload()
                 page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(8000)
-                
-                safe_click(page.get_by_role("button", name="Menu"), "Menu")
-                safe_click(page.get_by_role("button", name="Retail"), "Retail")
-                close_any_modal(page)
-                safe_click(page.get_by_role("tab", name="Reports"), "Reports Tab")
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(5000)
+                time.sleep(5)
 
-            if not link:
-                logger.error("Link not found. Dumping visible links...")
-                links = page.locator("a").all()
-                for l in links:
-                    if l.is_visible():
-                        logger.info(f"Link: {l.text_content()}")
-                raise Exception("Could not find 'Invoice Detail' link after 3 attempts")
+            if not invoice_link:
+                # Debug: list all visible links
+                logger.error("Could not find Invoice Detail link. Available links:")
+                all_links = page.locator("a").all()
+                for link in all_links[:30]:
+                    if link.is_visible():
+                        logger.info(f"  - {link.text_content()}")
+                raise Exception("Invoice Detail link not found")
             
-            link.wait_for(state="visible", timeout=10000)
-            safe_click(link, "Invoice Detail Link")
+            safe_click(invoice_link, "Invoice Detail Link")
+            page.wait_for_load_state("networkidle")
+            time.sleep(2)
 
-            # 4. Set Criteria
-            safe_click(page.get_by_role("link", name="Selection Criteria"), "Selection Criteria Tab")
+            # 4. Set Selection Criteria
+            criteria_tab = page.locator("a:has-text('Selection Criteria')").first
+            safe_click(criteria_tab, "Selection Criteria Tab")
+            time.sleep(1)
             
-            page.wait_for_function('() => $("#startDate").data("kendoDatePicker") && $("#endDate").data("kendoDatePicker")')
+            # Set dates using Kendo DatePicker
+            page.wait_for_function('() => typeof $ !== "undefined" && $("#startDate").data && $("#startDate").data("kendoDatePicker")', timeout=10000)
             page.evaluate(f"""
                 const s = $("#startDate").data("kendoDatePicker");
                 const e = $("#endDate").data("kendoDatePicker");
-                s.value(new Date("{date_str}"));
-                e.value(new Date("{date_str}"));
-                s.trigger("change"); e.trigger("change");
+                if (s && e) {{
+                    s.value(new Date("{date_str}"));
+                    e.value(new Date("{date_str}"));
+                    s.trigger("change");
+                    e.trigger("change");
+                }}
             """)
             logger.info(f"Date set to {date_str}")
 
-            # Select Doc Type
-            safe_click(page.get_by_role("button", name="select").nth(3), "Doc Type Dropdown")
-            safe_click(page.get_by_role("option", name=DOCUMENT_TYPE), f"Option: {DOCUMENT_TYPE}")
+            # Select Document Type
+            try:
+                doc_dropdown = page.locator("button:has-text('select')").nth(3)
+                safe_click(doc_dropdown, "Doc Type Dropdown", timeout=5000)
+                time.sleep(0.5)
+                doc_option = page.locator(f"li:has-text('{DOCUMENT_TYPE}')").first
+                safe_click(doc_option, f"Option: {DOCUMENT_TYPE}")
+            except Exception as e:
+                logger.warning(f"Could not set document type: {e}")
 
-            # Select All Data Columns
+            # Add Data Columns
             logger.info("Selecting All Data Columns...")
             try:
-                safe_click(page.get_by_role("link", name="Add Data Columns"), "Add Data Columns Tab")
-                page.wait_for_timeout(1000)
+                columns_tab = page.locator("a:has-text('Add Data Columns')").first
+                safe_click(columns_tab, "Add Data Columns Tab")
+                time.sleep(1)
                 
                 count = page.evaluate("""() => {
                     const cbs = Array.from(document.querySelectorAll("input[type='checkbox'][name='addoptions']"));
@@ -211,39 +225,46 @@ def run_download():
                 }""")
                 logger.info(f"Selected {count} additional columns.")
                 
-                safe_click(page.get_by_role("link", name="Selection Criteria"), "Back to Criteria")
+                # Go back to criteria
+                safe_click(page.locator("a:has-text('Selection Criteria')").first, "Back to Criteria")
             except Exception as e:
-                logger.error(f"Failed to select columns: {e}")
+                logger.warning(f"Could not select all columns: {e}")
 
-            # 5. Generate & Download
-            safe_click(page.get_by_role("button", name="GO"), "GO Button")
+            # 5. Generate Report
+            go_btn = page.locator("button:has-text('GO')").first
+            safe_click(go_btn, "GO Button")
             
-            logger.info("Waiting for Download Button...")
+            logger.info("Waiting for report to generate...")
             page.wait_for_function("""() => {
                 const btns = Array.from(document.querySelectorAll("button"));
                 return btns.some(b => ((b.innerText || "").trim().toLowerCase() === "download"));
-            }""", timeout=60000)
+            }""", timeout=90000)
+            logger.info("Report generated, downloading...")
 
+            # 6. Download
             with page.expect_download(timeout=120000) as download_info:
-                safe_click(page.get_by_role("button", name="Download"), "Download Button")
+                download_btn = page.locator("button:has-text('Download')").first
+                safe_click(download_btn, "Download Button")
             
             download = download_info.value
             original_name = download.suggested_filename
-            final_path = os.path.join(INPUT_REPORTS_DIR, original_name)
+            temp_path = os.path.join(INPUT_REPORTS_DIR, original_name)
             
-            download.save_as(final_path)
-            logger.info(f"Downloaded to temp: {final_path}")
+            download.save_as(temp_path)
+            logger.info(f"Downloaded to: {temp_path}")
 
-            # Move to Data Input
-            dest_path = os.path.join(DATA_INPUT_DIR, original_name)
-            shutil.move(final_path, dest_path)
+            # Move to data_input
+            final_path = os.path.join(DATA_INPUT_DIR, original_name)
+            shutil.move(temp_path, final_path)
             
-            logger.info(f"Moved to Final: {dest_path}")
-            print(f"SUCCESS: {dest_path}")
+            logger.info(f"SUCCESS: {final_path}")
+            print(f"SUCCESS: {final_path}")
             
         except Exception as e:
             logger.error(f"Automation Failed: {e}")
-            page.screenshot(path=os.path.join(BASE_DIR, "error_screenshot.png"))
+            screenshot_path = os.path.join(BASE_DIR, "error_screenshot.png")
+            page.screenshot(path=screenshot_path)
+            logger.info(f"Screenshot saved to: {screenshot_path}")
             sys.exit(1)
         finally:
             browser.close()

@@ -35,7 +35,7 @@ export const runIngestion = async () => {
         console.error('⚠️ Failed to create restore point, but proceeding with ingestion...');
     }
 
-    const inputDir = process.env.DATA_INPUT_DIR || 'D:\\Jacadi DSR\\input_reports';
+    const inputDir = process.env.DATA_INPUT_DIR || path.join(__dirname, '../../data_input');
     const archiveDir = process.env.DATA_ARCHIVE_DIR || 'D:\\Jacadi DSR\\data_archive';
 
     if (!fs.existsSync(inputDir)) {

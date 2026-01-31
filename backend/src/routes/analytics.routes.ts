@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db from '../config/db';
+import { getCollection } from '../config/mongodb';
 import { authenticateJWT } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -7,43 +7,62 @@ const router = Router();
 // Apply Authentication
 router.use(authenticateJWT);
 
-// GET /api/analytics/trends - Sales Trend (Last 30 Days)
+// GET /api/analytics/trends - Sales Trend (Last 90 Days)
 router.get('/trends', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                DATE(invoice_date) as date,
-                SUM(nett_invoice_value) as sales
-            FROM sales_transactions
-            WHERE invoice_date >= DATE('now', '-90 days')
-            GROUP BY DATE(invoice_date)
-            ORDER BY date ASC
-        `;
-        const result = await db.query(query);
-        res.json(result.rows);
+        const salesTx = getCollection('sales_transactions');
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        
+        const result = await salesTx.aggregate([
+            { $match: { invoice_date: { $gte: ninetyDaysAgo.toISOString().split('T')[0] } } },
+            { 
+                $group: {
+                    _id: '$invoice_date',
+                    sales: { $sum: '$nett_invoice_value' }
+                }
+            },
+            { $sort: { _id: 1 } },
+            { $project: { date: '$_id', sales: 1, _id: 0 } }
+        ]).toArray();
+        
+        res.json(result);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
-// GET /api/analytics/hourly - Hourly Heatmap (All Time or Last 30 Days)
+// GET /api/analytics/hourly - Hourly Heatmap
 router.get('/hourly', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                CASE 
-                    WHEN instr(invoice_time, ':') > 0 THEN substr(invoice_time, 1, 2)
-                    ELSE '00' 
-                END as hour,
-                COUNT(DISTINCT invoice_no) as trx_count,
-                SUM(nett_invoice_value) as total_sales
-            FROM sales_transactions
-            WHERE invoice_time IS NOT NULL AND invoice_time != ''
-            GROUP BY hour
-            ORDER BY hour ASC
-        `;
-        const result = await db.query(query);
-        res.json(result.rows);
+        const salesTx = getCollection('sales_transactions');
+        
+        const result = await salesTx.aggregate([
+            { $match: { invoice_time: { $exists: true, $ne: '' } } },
+            {
+                $addFields: {
+                    hour: { $substr: ['$invoice_time', 0, 2] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$hour',
+                    trx_count: { $addToSet: '$invoice_no' },
+                    total_sales: { $sum: '$nett_invoice_value' }
+                }
+            },
+            {
+                $project: {
+                    hour: '$_id',
+                    trx_count: { $size: '$trx_count' },
+                    total_sales: 1,
+                    _id: 0
+                }
+            },
+            { $sort: { hour: 1 } }
+        ]).toArray();
+        
+        res.json(result);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -52,21 +71,34 @@ router.get('/hourly', async (req, res) => {
 // GET /api/analytics/summary - KPI Cards
 router.get('/summary', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                SUM(nett_invoice_value) as total_sales,
-                COUNT(DISTINCT invoice_no) as total_trx,
-                SUM(total_sales_qty) as total_units
-            FROM sales_transactions
-        `;
-        const result = await db.query(query);
-        const { total_sales, total_trx, total_units } = result.rows[0];
+        const salesTx = getCollection('sales_transactions');
+        
+        const result = await salesTx.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    total_sales: { $sum: '$nett_invoice_value' },
+                    unique_invoices: { $addToSet: '$invoice_no' },
+                    total_units: { $sum: '$total_sales_qty' }
+                }
+            },
+            {
+                $project: {
+                    total_sales: 1,
+                    total_trx: { $size: '$unique_invoices' },
+                    total_units: 1,
+                    _id: 0
+                }
+            }
+        ]).toArray();
+        
+        const data = result[0] || { total_sales: 0, total_trx: 0, total_units: 0 };
 
         res.json({
-            total_sales: total_sales || 0,
-            total_trx: total_trx || 0,
-            atv: total_trx > 0 ? Math.round(total_sales / total_trx) : 0,
-            upt: total_trx > 0 ? (total_units / total_trx).toFixed(2) : 0
+            total_sales: data.total_sales || 0,
+            total_trx: data.total_trx || 0,
+            atv: data.total_trx > 0 ? Math.round(data.total_sales / data.total_trx) : 0,
+            upt: data.total_trx > 0 ? (data.total_units / data.total_trx).toFixed(2) : '0'
         });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -76,16 +108,20 @@ router.get('/summary', async (req, res) => {
 // GET /api/analytics/channel-split - Pie Chart
 router.get('/channel-split', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                COALESCE(order_channel_name, 'Unknown') as name,
-                SUM(nett_invoice_value) as value
-            FROM sales_transactions
-            GROUP BY order_channel_name
-            ORDER BY value DESC
-        `;
-        const result = await db.query(query);
-        res.json(result.rows);
+        const salesTx = getCollection('sales_transactions');
+        
+        const result = await salesTx.aggregate([
+            {
+                $group: {
+                    _id: { $ifNull: ['$order_channel_name', 'Unknown'] },
+                    value: { $sum: '$nett_invoice_value' }
+                }
+            },
+            { $sort: { value: -1 } },
+            { $project: { name: '$_id', value: 1, _id: 0 } }
+        ]).toArray();
+        
+        res.json(result);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -94,22 +130,31 @@ router.get('/channel-split', async (req, res) => {
 // GET /api/analytics/store-performance - Bar Chart
 router.get('/store-performance', async (req, res) => {
     try {
-        const query = `
-            SELECT 
-                location_name as name,
-                SUM(nett_invoice_value) as sales,
-                COUNT(DISTINCT invoice_no) as trx
-            FROM sales_transactions
-            GROUP BY location_name
-            ORDER BY sales DESC
-        `;
-        const result = await db.query(query);
-        res.json(result.rows);
+        const salesTx = getCollection('sales_transactions');
+        
+        const result = await salesTx.aggregate([
+            {
+                $group: {
+                    _id: '$location_name',
+                    sales: { $sum: '$nett_invoice_value' },
+                    unique_invoices: { $addToSet: '$invoice_no' }
+                }
+            },
+            {
+                $project: {
+                    name: '$_id',
+                    sales: 1,
+                    trx: { $size: '$unique_invoices' },
+                    _id: 0
+                }
+            },
+            { $sort: { sales: -1 } }
+        ]).toArray();
+        
+        res.json(result);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
-
-
 
 export default router;

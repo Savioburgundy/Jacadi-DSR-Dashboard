@@ -1,9 +1,10 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { TrendingUp, DollarSign, ShoppingCart, Users, BarChart2, ArrowRight, Clock, UserCog, Info, ArrowUpRight, ArrowDownRight, ChevronDown, RefreshCcw } from 'lucide-react';
+import { TrendingUp, DollarSign, ShoppingCart, Users, BarChart2, ArrowRight, Clock, UserCog, Info, ArrowUpRight, ArrowDownRight, ChevronDown, RefreshCcw, History } from 'lucide-react';
 import api from '../../services/api';
 import UserManagement from '../admin/UserManagement';
+import SyncHistory from './SyncHistory';
 import Analytics from './Analytics';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';

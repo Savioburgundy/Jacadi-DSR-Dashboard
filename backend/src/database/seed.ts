@@ -241,7 +241,7 @@ const seedEfficiencyData = async () => {
 import { processFootfallCSV } from '../services/etl.service';
 
 const seedFootfallData = async () => {
-    const inputReportsDir = path.join('D:\\Jacadi DSR\\input_reports');
+    const inputReportsDir = process.env.DATA_INPUT_DIR || path.join(__dirname, '../../data_input');
     let csvPath: string | null = null;
 
     if (fs.existsSync(inputReportsDir)) {
@@ -252,8 +252,11 @@ const seedFootfallData = async () => {
     }
 
     // Fallback to project root if converted manually
-    if (!csvPath && fs.existsSync('D:\\Jacadi DSR\\Footfall Data - 2601101955.csv')) {
-        csvPath = 'D:\\Jacadi DSR\\Footfall Data - 2601101955.csv';
+    if (!csvPath) {
+        const fallbackPath = path.join(__dirname, '../../Footfall Data.csv');
+        if (fs.existsSync(fallbackPath)) {
+            csvPath = fallbackPath;
+        }
     }
 
     if (!csvPath) {

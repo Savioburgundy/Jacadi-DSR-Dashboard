@@ -104,7 +104,7 @@ export const runIngestion = async () => {
                 id: uuidv4(),
                 filename: file,
                 status: 'failed',
-                error_message: (err as Error).message,
+                error_message: err instanceof Error ? err.message : String(err),
                 created_at: new Date()
             });
         }

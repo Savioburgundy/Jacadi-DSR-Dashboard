@@ -8,6 +8,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     strictPort: true,
+    allowedHosts: ['sales-metrics-97.preview.emergentagent.com', 'localhost'],
   },
   envPrefix: ['VITE_', 'REACT_APP_'],
 })

@@ -58,11 +58,38 @@ def run_download():
             logger.info("Navigating to login page...")
             page.goto("https://login.olabi.ooo/", wait_until="domcontentloaded")
             
-            # Wait for page to fully load
+            # Wait for page to load
             logger.info("Waiting for page to load...")
-            page.wait_for_timeout(5000)
+            page.wait_for_timeout(3000)
             
-            # Wait for username field to be visible
+            # IMPORTANT: Click the arrow/continue button on splash page
+            logger.info("Looking for splash page continue button...")
+            try:
+                # Try to find any button/arrow that proceeds to login
+                continue_selectors = [
+                    "button[type='button']",  # Generic button
+                    ".btn-next",
+                    ".continue-btn", 
+                    "a.arrow",
+                    "button.arrow",
+                    "svg",  # Arrow icon might be SVG
+                    ".fa-arrow-right",
+                    "i.fa",
+                ]
+                
+                # First try clicking any visible button
+                buttons = page.locator("button").all()
+                for btn in buttons:
+                    if btn.is_visible():
+                        logger.info(f"Found visible button, clicking...")
+                        btn.click()
+                        page.wait_for_timeout(2000)
+                        break
+                
+            except Exception as e:
+                logger.info(f"No splash button needed or error: {e}")
+            
+            # Now wait for login form to appear
             logger.info("Waiting for login form...")
             page.wait_for_selector("#username_id", state="visible", timeout=30000)
             
@@ -71,109 +98,50 @@ def run_download():
             page.fill("#username_id", USERNAME)
             page.fill("#password_id", PASSWORD)
             
-            # Take screenshot before login
-            page.screenshot(path=os.path.join(BASE_DIR, "before_login.png"))
-            
             # Click login button
             logger.info("Clicking Sign In...")
             page.locator("#signUp").click()
             
-            # Wait for navigation/page change
+            # Wait for login
             logger.info("Waiting for login to complete...")
             page.wait_for_timeout(8000)
             
-            # Handle "Disconnect Previous Login" popup if it appears
+            # Handle "Disconnect Previous Login" popup
             try:
                 disconnect_btn = page.locator("button:has-text('Disconnect')")
                 if disconnect_btn.is_visible(timeout=5000):
-                    logger.info("Found Disconnect button, clicking...")
+                    logger.info("Disconnecting previous session...")
                     disconnect_btn.click()
                     page.wait_for_timeout(3000)
             except:
-                logger.info("No disconnect popup")
+                pass
             
-            # Take screenshot after login
-            page.screenshot(path=os.path.join(BASE_DIR, "after_login.png"))
+            page.wait_for_load_state("networkidle")
             logger.info(f"Current URL: {page.url}")
             
-            # Wait for dashboard
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(3000)
-            
-            # Debug: Print page title and URL
-            logger.info(f"Page title: {page.title()}")
-            logger.info(f"Page URL: {page.url}")
-            
-            # Look for Menu button - the portal uses specific classes
-            logger.info("Looking for navigation elements...")
-            
-            # Take screenshot to see current state
-            page.screenshot(path=os.path.join(BASE_DIR, "dashboard.png"))
-            
-            # Try to find menu by inspecting visible elements
-            all_buttons = page.locator("button").all()
-            logger.info(f"Found {len(all_buttons)} buttons")
-            for i, btn in enumerate(all_buttons[:15]):
-                try:
-                    if btn.is_visible():
-                        text = btn.inner_text()
-                        classes = btn.get_attribute("class") or ""
-                        logger.info(f"  Button {i}: '{text[:30]}' class='{classes[:50]}'")
-                except Exception as e:
-                    pass
-            
-            # Try clicking Menu button
+            # Click Menu button
+            logger.info("Looking for Menu button...")
             menu_btn = page.locator("button:has-text('Menu')").first
-            if menu_btn.is_visible(timeout=10000):
-                logger.info("Found Menu button, clicking...")
-                menu_btn.click()
-                page.wait_for_timeout(2000)
-            else:
-                logger.error("Menu button not visible")
-                raise Exception("Could not find Menu button after login")
-            
-            # Take screenshot of menu open
-            page.screenshot(path=os.path.join(BASE_DIR, "menu_open.png"))
-            
-            # Find and click Retail
-            logger.info("Looking for Retail in menu...")
-            
-            # Get all links/items in sidebar
-            sidebar_items = page.locator(".sidebar a, .sidebar li, nav a").all()
-            logger.info(f"Found {len(sidebar_items)} sidebar items")
-            
-            retail_clicked = False
-            for item in sidebar_items:
-                try:
-                    if item.is_visible():
-                        text = item.inner_text().strip()
-                        if text == "Retail":
-                            logger.info(f"Found Retail, clicking...")
-                            item.click()
-                            retail_clicked = True
-                            break
-                except:
-                    continue
-            
-            if not retail_clicked:
-                # Try alternative
-                page.get_by_text("Retail", exact=True).first.click()
-                logger.info("Clicked Retail via text match")
-            
+            menu_btn.wait_for(state="visible", timeout=30000)
+            menu_btn.click()
+            logger.info("Clicked Menu")
             page.wait_for_timeout(2000)
-            page.screenshot(path=os.path.join(BASE_DIR, "retail_menu.png"))
+            
+            # Click Retail in sidebar
+            logger.info("Looking for Retail...")
+            page.get_by_text("Retail", exact=True).first.click()
+            logger.info("Clicked Retail")
+            page.wait_for_timeout(2000)
             
             # Click Reports
-            logger.info("Clicking Reports...")
+            logger.info("Looking for Reports...")
             page.locator("a:has-text('Reports')").first.click()
+            logger.info("Clicked Reports")
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(3000)
-            
-            page.screenshot(path=os.path.join(BASE_DIR, "reports_page.png"))
             
             # Find Invoice Detail
             logger.info("Looking for Invoice Detail...")
-            
             all_links = page.locator("a").all()
             invoice_link = None
             for link in all_links:
@@ -200,7 +168,7 @@ def run_download():
             page.locator("a:has-text('Selection Criteria')").first.click()
             page.wait_for_timeout(1000)
             
-            # Set dates using jQuery
+            # Set dates
             page.wait_for_function('() => typeof $ !== "undefined" && $("#startDate").data && $("#startDate").data("kendoDatePicker")', timeout=15000)
             page.evaluate(f"""
                 const s = $("#startDate").data("kendoDatePicker");
@@ -219,7 +187,6 @@ def run_download():
                 page.locator("button:has-text('select')").nth(3).click()
                 page.wait_for_timeout(500)
                 page.locator(f"li:has-text('{DOCUMENT_TYPE}')").first.click()
-                logger.info(f"Document type: {DOCUMENT_TYPE}")
             except:
                 pass
 
@@ -235,12 +202,12 @@ def run_download():
             except:
                 pass
 
-            # Generate
+            # Generate report
             logger.info("Generating report...")
             page.locator("button:has-text('GO')").first.click()
             
             # Wait for download button
-            logger.info("Waiting for report...")
+            logger.info("Waiting for report to generate...")
             page.wait_for_function("""() => {
                 const btns = Array.from(document.querySelectorAll("button"));
                 return btns.some(b => ((b.innerText || "").trim().toLowerCase() === "download"));

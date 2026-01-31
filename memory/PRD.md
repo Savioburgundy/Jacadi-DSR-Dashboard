@@ -32,14 +32,25 @@ Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data 
 #### Data Sync Automation (Sync Data Button)
 - ✅ Playwright automation script for Olabi portal
 - ✅ Login, navigate to Reports, download Invoice Detail CSV
-- ✅ DB backup before ingestion
+- ✅ MongoDB backup before ingestion (via mongodump if available)
 - ✅ CSV parsing and ingestion pipeline
 - ✅ 6:00 AM daily cron job configured
+
+### Database Migration (Jan 31, 2026) ✅
+- **Migrated from SQLite to MongoDB** for deployment compatibility
+- All data successfully transferred:
+  - 15,204 sales transactions
+  - 6,627 footfall records
+  - 4 users
+  - 9 ingestion logs
+  - 2 location efficiency records
+- All SQL queries converted to MongoDB aggregation pipelines
+- Indexes created for optimal query performance
 
 #### Technical Stack
 - **Backend**: Node.js + Express + TypeScript
 - **Frontend**: React + Vite + TypeScript + TailwindCSS
-- **Database**: SQLite (13MB with historical data)
+- **Database**: MongoDB (migrated from SQLite)
 - **Automation**: Python + Playwright
 
 ### Olabi Portal Credentials
@@ -52,35 +63,38 @@ Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data 
 - `GET /api/auth/me` - Current user
 - `POST /api/ingest/run` - Trigger manual sync (Admin only)
 - `POST /api/ingest/download` - Download CSV only
-- `GET /api/dashboards/default/*` - Dashboard data
-- `GET /api/analytics/summary` - KPI summary
+- `GET /api/ingest/logs` - Get ingestion history
+- `GET /api/dashboards/latest-date` - Get latest data date
+- `GET /api/dashboards/:id/*` - Dashboard data endpoints
+- `GET /api/analytics/*` - Analytics endpoints
 
-### Database Schema (SQLite)
-- `users` - Authentication
-- `sales_transactions` - Sales data
-- `footfall` - Store footfall
+### Database Schema (MongoDB Collections)
+- `users` - Authentication (email, password_hash, full_name, role)
+- `sales_transactions` - Sales data (invoice_no, invoice_date, location_name, nett_invoice_value, etc.)
+- `footfall` - Store footfall (date, location_name, footfall_count)
 - `location_efficiency` - Efficiency metrics
-- `whatsapp_sales_report` - WhatsApp channel
-- `ingestion_logs` - Sync history
-- Multiple views for analytics
+- `ingestion_logs` - Sync history (filename, status, rows_added)
 
 ### File Structure
 ```
 /app/
-├── backend/                    # Node.js/Express/TypeScript
+├── backend/                    # Node.js/Express/TypeScript + MongoDB
 │   ├── src/
-│   │   ├── app.ts              # Main entry
-│   │   ├── config/db.ts        # SQLite connection
+│   │   ├── app.ts              # Main entry (with MongoDB init)
+│   │   ├── config/
+│   │   │   ├── db.ts           # Old SQLite config (deprecated)
+│   │   │   └── mongodb.ts      # MongoDB connection
 │   │   ├── routes/             # API routes
 │   │   ├── services/           # Business logic
-│   │   │   ├── etl.service.ts  # CSV processing
+│   │   │   ├── etl.service.ts  # MongoDB aggregations
 │   │   │   ├── ingestion.service.ts
 │   │   │   ├── backup.service.ts
 │   │   │   └── scheduler.service.ts
 │   │   └── middleware/
 │   ├── scripts/
-│   │   └── fetch_jacadi_report.py  # Playwright automation
-│   ├── data.db                 # SQLite database
+│   │   ├── fetch_jacadi_report.py  # Playwright automation
+│   │   └── migrate_sqlite_to_mongo.ts # Migration script
+│   ├── data.db                 # Old SQLite database (archived)
 │   ├── data_input/             # Downloaded CSVs
 │   ├── data_archive/           # Processed CSVs
 │   └── backups/                # DB backups
@@ -89,13 +103,13 @@ Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data 
 │   │   ├── App.tsx
 │   │   ├── components/dashboard/
 │   │   └── services/api.ts
-│   └── package.json
+│   └── vite.config.ts          # With /api proxy to backend
 └── memory/PRD.md
 ```
 
 ### Sync Data Flow
 1. User clicks "Sync Data" button (Admin only)
-2. Backend creates DB restore point
+2. Backend creates MongoDB backup point (if mongodump available)
 3. Playwright script logs into Olabi portal
 4. Downloads Invoice Detail CSV for yesterday
 5. CSV moved to data_input folder
@@ -103,15 +117,24 @@ Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data 
 7. File archived after successful ingestion
 
 ### Completed This Session
-- Migrated from Python/FastAPI/MongoDB to Node.js/Express/SQLite
-- Fixed Windows paths to Linux paths
-- Configured Playwright automation
-- Tested full sync flow
-- Fixed layout to fit screen properly
-- Added Sync History panel with stats and log table
+- ✅ SQLite to MongoDB database migration
+- ✅ Created migration script (`migrate_sqlite_to_mongo.ts`)
+- ✅ Fixed MongoDB aggregation projection errors ($literal for constants)
+- ✅ Updated all route files for MongoDB
+- ✅ Updated ingestion service for MongoDB
+- ✅ Updated backup service for MongoDB (mongodump)
+- ✅ Added Vite proxy configuration for /api routes
+- ✅ All APIs tested and working
+
+### Testing Results (Jan 31, 2026)
+- **Backend**: 100% success rate (21/21 tests passed)
+- **Frontend**: 95% (all major features working)
+- All 7 dashboard tabs verified functional
+- Authentication working correctly
+- Admin features (Sync History, Manage Users) working
 
 ## Upcoming Tasks (P1)
-- Historical data backfill (Feb 26, 2025 onwards)
+- Historical data backfill (if needed)
 - Error handling improvements for sync
 - Sync status notifications in UI
 

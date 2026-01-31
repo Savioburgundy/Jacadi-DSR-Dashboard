@@ -9,6 +9,12 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     allowedHosts: ['sales-metrics-97.preview.emergentagent.com', 'localhost'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+      }
+    }
   },
   envPrefix: ['VITE_', 'REACT_APP_'],
 })

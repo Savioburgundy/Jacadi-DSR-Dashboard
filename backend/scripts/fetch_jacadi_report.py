@@ -10,9 +10,9 @@ from playwright.sync_api import sync_playwright
 # --- CONFIG ---
 USERNAME = "JPHO@JP"
 PASSWORD = "jPHO@JP@657"
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # server directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # server/backend directory
 INPUT_REPORTS_DIR = os.path.join(BASE_DIR, "input_reports")
-FINAL_DEST_DIR = os.path.abspath(os.path.join(BASE_DIR, "../data_input"))
+DATA_INPUT_DIR = os.environ.get("DATA_INPUT_DIR", os.path.join(BASE_DIR, "data_input"))
 DOCUMENT_TYPE = "Sales Including Returns"
 
 # Setup Logging
@@ -20,10 +20,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 def clean_input_dir():
-    """Optional: Archive old files or ensure directory exists"""
+    """Ensure directory exists"""
     if not os.path.exists(INPUT_REPORTS_DIR):
         os.makedirs(INPUT_REPORTS_DIR)
         logger.info(f"Created {INPUT_REPORTS_DIR}")
+    if not os.path.exists(DATA_INPUT_DIR):
+        os.makedirs(DATA_INPUT_DIR)
+        logger.info(f"Created {DATA_INPUT_DIR}")
 
 def safe_click(locator, desc=""):
     try:
@@ -55,7 +58,6 @@ def run_download():
     args = parser.parse_args()
 
     if args.date:
-        # User defined date
         try:
             target_date = datetime.strptime(args.date, "%Y-%m-%d")
         except ValueError:
@@ -65,7 +67,7 @@ def run_download():
         # Default to Yesterday
         target_date = datetime.now() - timedelta(days=1)
         
-    date_str = target_date.strftime("%Y-%m-%d") # API format
+    date_str = target_date.strftime("%Y-%m-%d")  # API format
     dmy_str = target_date.strftime("%d/%m/%Y")   # UI format
     
     logger.info(f"Starting Download for Date: {dmy_str}")
@@ -80,7 +82,7 @@ def run_download():
             logger.info("Logging in...")
             page.goto("https://login.olabi.ooo/", timeout=60000)
             
-            # Legacy/Continue button check
+            # Handle any initial popups
             try:
                 page.get_by_role("button").first.click(timeout=3000)
             except: pass
@@ -103,21 +105,19 @@ def run_download():
             # 2. Navigate to Reports
             close_any_modal(page)
             
-            # Try to find Menu button more robustly
             menu_btn = page.get_by_role("button", name="Menu")
             if not menu_btn.is_visible():
-                menu_btn = page.locator(".sidebar-toggle") # Alternative common selector
+                menu_btn = page.locator(".sidebar-toggle")
             
             safe_click(menu_btn, "Menu")
-            time.sleep(1) # Let menu open
+            time.sleep(1)
 
-            # Try to find Retail button more robustly
             retail_btn = page.get_by_role("button", name="Retail")
             if not retail_btn.is_visible():
                 retail_btn = page.locator("li:has-text('Retail')")
             
             safe_click(retail_btn, "Retail")
-            time.sleep(1) # Let submenu open
+            time.sleep(1)
             
             close_any_modal(page)
             
@@ -127,21 +127,18 @@ def run_download():
             
             safe_click(reports_tab, "Reports Tab")
             page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(3000) # Wait for list to load
+            page.wait_for_timeout(3000)
 
             # 3. Open Invoice Detail
             logger.info("Opening Invoice Detail Report...")
             
-            # Helper to find link (Robust Strategy from Original Script)
             def find_report_link(name):
-                # 1. Try exact matches and pick the visible one
                 links = page.get_by_role("link", name=name, exact=True).all()
                 for l in links:
                     if l.is_visible():
                         logger.info(f"Found visible exact link: {name}")
                         return l
                 
-                # 2. Try fuzzy matches
                 links = page.locator(f"a:has-text('{name}')").all()
                 for l in links:
                     if l.is_visible() and name.lower() in (l.text_content() or "").lower():
@@ -150,7 +147,6 @@ def run_download():
 
                 return None
 
-            # Retry logic
             link = None
             for attempt in range(3):
                 link = find_report_link("Invoice Detail")
@@ -161,31 +157,12 @@ def run_download():
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(8000)
                 
-                # Re-navigation
                 safe_click(page.get_by_role("button", name="Menu"), "Menu")
                 safe_click(page.get_by_role("button", name="Retail"), "Retail")
                 close_any_modal(page)
                 safe_click(page.get_by_role("tab", name="Reports"), "Reports Tab")
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(5000)
-
-            # Retry logic for finding link
-            link = None
-            for attempt in range(3):
-                link = find_report_link("Invoice Detail")
-                if link: break
-                logger.warning(f"Attempt {attempt+1}: Report link not found. Reloading...")
-                page.reload()
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(5000)
-                
-                # Re-navigation needed after reload
-                safe_click(page.get_by_role("button", name="Menu"), "Menu")
-                safe_click(page.get_by_role("button", name="Retail"), "Retail")
-                close_any_modal(page)
-                safe_click(page.get_by_role("tab", name="Reports"), "Reports Tab")
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(10000)
 
             if not link:
                 logger.error("Link not found. Dumping visible links...")
@@ -195,14 +172,12 @@ def run_download():
                         logger.info(f"Link: {l.text_content()}")
                 raise Exception("Could not find 'Invoice Detail' link after 3 attempts")
             
-            # Ensure it is visible before clicking
             link.wait_for(state="visible", timeout=10000)
             safe_click(link, "Invoice Detail Link")
 
             # 4. Set Criteria
             safe_click(page.get_by_role("link", name="Selection Criteria"), "Selection Criteria Tab")
             
-            # Set Date via Kendo UI Hack (Proven reliable)
             page.wait_for_function('() => $("#startDate").data("kendoDatePicker") && $("#endDate").data("kendoDatePicker")')
             page.evaluate(f"""
                 const s = $("#startDate").data("kendoDatePicker");
@@ -217,13 +192,12 @@ def run_download():
             safe_click(page.get_by_role("button", name="select").nth(3), "Doc Type Dropdown")
             safe_click(page.get_by_role("option", name=DOCUMENT_TYPE), f"Option: {DOCUMENT_TYPE}")
 
-            # --- ADD DATA COLUMNS (CRITICAL) ---
+            # Select All Data Columns
             logger.info("Selecting All Data Columns...")
             try:
                 safe_click(page.get_by_role("link", name="Add Data Columns"), "Add Data Columns Tab")
                 page.wait_for_timeout(1000)
                 
-                # Check all unchecked boxes
                 count = page.evaluate("""() => {
                     const cbs = Array.from(document.querySelectorAll("input[type='checkbox'][name='addoptions']"));
                     let clicked = 0;
@@ -237,7 +211,6 @@ def run_download():
                 }""")
                 logger.info(f"Selected {count} additional columns.")
                 
-                # Go back to main tab
                 safe_click(page.get_by_role("link", name="Selection Criteria"), "Back to Criteria")
             except Exception as e:
                 logger.error(f"Failed to select columns: {e}")
@@ -246,7 +219,6 @@ def run_download():
             safe_click(page.get_by_role("button", name="GO"), "GO Button")
             
             logger.info("Waiting for Download Button...")
-            # Wait for any button with text "Download"
             page.wait_for_function("""() => {
                 const btns = Array.from(document.querySelectorAll("button"));
                 return btns.some(b => ((b.innerText || "").trim().toLowerCase() === "download"));
@@ -256,22 +228,18 @@ def run_download():
                 safe_click(page.get_by_role("button", name="Download"), "Download Button")
             
             download = download_info.value
-            # Save using original filename from portal
             original_name = download.suggested_filename
             final_path = os.path.join(INPUT_REPORTS_DIR, original_name)
             
             download.save_as(final_path)
             logger.info(f"Downloaded to temp: {final_path}")
 
-            # Move to Data Input used by Backend
-            if not os.path.exists(FINAL_DEST_DIR):
-                os.makedirs(FINAL_DEST_DIR)
-            
-            dest_path = os.path.join(FINAL_DEST_DIR, original_name)
+            # Move to Data Input
+            dest_path = os.path.join(DATA_INPUT_DIR, original_name)
             shutil.move(final_path, dest_path)
             
             logger.info(f"Moved to Final: {dest_path}")
-            print(f"SUCCESS: {dest_path}") # Signal for Node.js
+            print(f"SUCCESS: {dest_path}")
             
         except Exception as e:
             logger.error(f"Automation Failed: {e}")

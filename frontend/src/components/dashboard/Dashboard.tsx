@@ -281,6 +281,7 @@ const MultiSelectDropdown = ({
 
 const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
     const [showUserMgmt, setShowUserMgmt] = useState(false);
+    const [showSyncHistory, setShowSyncHistory] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
 
     const handleSync = async () => {

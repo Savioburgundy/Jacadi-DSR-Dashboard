@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 
-// FORCE ABSOLUTE PATH to populated DB
+// Use path relative to server directory
 const DB_PATH = path.join(__dirname, '../../data.db');
 console.log(`[DB CONFIG] Connecting to: ${DB_PATH}`);
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import db from '../config/db';
+import { getCollection } from '../config/mongodb';
 
 const router = Router();
 
@@ -10,9 +10,8 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Find user by email
-        const result = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-        const user = result.rows[0];
+        const users = getCollection('users');
+        const user = await users.findOne({ email });
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -25,12 +24,20 @@ router.post('/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, role: user.role, name: user.full_name },
+            { id: user._id.toString(), role: user.role, name: user.full_name },
             process.env.JWT_SECRET || 'secret',
             { expiresIn: '24h' }
         );
 
-        res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.full_name } });
+        res.json({ 
+            token, 
+            user: { 
+                id: user._id.toString(), 
+                email: user.email, 
+                role: user.role, 
+                name: user.full_name 
+            } 
+        });
     } catch (error: any) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -42,8 +49,22 @@ router.get('/me', async (req: any, res) => {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-        const result = await db.query('SELECT id, email, role, full_name FROM users WHERE id = ?', [req.user.id]);
-        res.json(result.rows[0]);
+        const users = getCollection('users');
+        const user = await users.findOne(
+            { _id: req.user.id },
+            { projection: { password_hash: 0 } }
+        );
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json({
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+            full_name: user.full_name
+        });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

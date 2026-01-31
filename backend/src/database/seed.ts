@@ -145,7 +145,7 @@ const seedInvoiceData = async () => {
         // Fallback paths (single file check)
         const possiblePaths = [
             path.join(__dirname, '../../JPHO@JPinvoicedetailreport10012026013411.csv'),
-            'D:\\Jacadi DSR\\JPHO@JPinvoicedetailreport10012026013411.csv'
+            path.join(__dirname, '../../data_input/JPHO@JPinvoicedetailreport10012026013411.csv')
         ];
         for (const p of possiblePaths) {
             if (fs.existsSync(p)) {

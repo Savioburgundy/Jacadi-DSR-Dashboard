@@ -32,6 +32,7 @@ export const MetricCard = ({
     <div 
       className={`metric-card group ${className}`}
       style={{ animation: `fade-in 0.5s ease-out ${delay}ms forwards` }}
+      data-testid={testId}
     >
       {/* Glow Effect */}
       <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-[#D70075]/0 via-[#D70075]/0 to-[#38BDF8]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />

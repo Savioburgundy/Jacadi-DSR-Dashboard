@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
-import db from '../config/db';
+import { ObjectId } from 'mongodb';
+import { getCollection } from '../config/mongodb';
 import { authenticateJWT, authorizeRole } from '../middleware/auth.middleware';
 
 const router = Router();
@@ -13,9 +13,23 @@ router.use(authorizeRole(['admin']));
 // GET /api/users - List all users
 router.get('/', async (req, res) => {
     try {
-        const query = 'SELECT id, email, full_name, role, active, created_at FROM users ORDER BY created_at DESC';
-        const result = await db.query(query);
-        res.json(result.rows);
+        const users = getCollection('users');
+        const result = await users.find(
+            {},
+            { projection: { password_hash: 0 } }
+        ).sort({ created_at: -1 }).toArray();
+        
+        // Transform _id to id for frontend compatibility
+        const transformed = result.map(u => ({
+            id: u._id.toString(),
+            email: u.email,
+            full_name: u.full_name,
+            role: u.role,
+            active: u.active,
+            created_at: u.created_at
+        }));
+        
+        res.json(transformed);
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -30,22 +44,31 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        const users = getCollection('users');
+        
         // Check if user exists
-        const check = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (check.rows.length > 0) {
+        const existing = await users.findOne({ email });
+        if (existing) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const id = uuidv4();
         const hashedPassword = await bcrypt.hash(password, 10);
-        const now = new Date().toISOString();
+        const now = new Date();
 
-        await db.query(
-            'INSERT INTO users (id, email, password_hash, full_name, role, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, email, hashedPassword, full_name, role, 1, now, now]
-        );
+        const result = await users.insertOne({
+            email,
+            password_hash: hashedPassword,
+            full_name,
+            role,
+            active: 1,
+            created_at: now,
+            updated_at: now
+        });
 
-        res.status(201).json({ message: 'User created successfully', user: { id, email, role } });
+        res.status(201).json({ 
+            message: 'User created successfully', 
+            user: { id: result.insertedId.toString(), email, role } 
+        });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -55,7 +78,8 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        await db.query('DELETE FROM users WHERE id = ?', [id]);
+        const users = getCollection('users');
+        await users.deleteOne({ _id: new ObjectId(id) });
         res.json({ message: 'User deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });

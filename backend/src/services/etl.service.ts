@@ -1144,7 +1144,6 @@ export const getRetailEfficiency = async (
     const footfallMap = new Map(footfallData.map((f: any) => [f._id, { MTD: f.MTD_FOOTFALL, PM: f.PM_FOOTFALL }]));
 
     // Get sales metrics - count NET transactions (Sales - Returns)
-
     const pipeline = [
         { $match: matchFilter },
         {
@@ -1166,15 +1165,46 @@ export const getRetailEfficiency = async (
                         ]
                     }
                 },
-                MTD_RAW_TRX: {
+                // Count NET transactions (IV Sales - CN Returns)
+                MTD_SALES_TRX: {
                     $sum: {
                         $cond: [
                             {
                                 $and: [
                                     { $gte: ['$invoice_date', dates.startOfMonth] },
                                     { $lte: ['$invoice_date', dates.selectedDate] },
-                                    { $in: ['$transaction_type', ['IV', 'IR']] },
+                                    { $eq: ['$transaction_type', 'IV'] },
                                     { $eq: ['$mh1_description', 'Sales'] }
+                                ]
+                            },
+                            1, 0
+                        ]
+                    }
+                },
+                MTD_RETURN_TRX: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $gte: ['$invoice_date', dates.startOfMonth] },
+                                    { $lte: ['$invoice_date', dates.selectedDate] },
+                                    { $eq: ['$transaction_type', 'CN'] }
+                                ]
+                            },
+                            1, 0
+                        ]
+                    }
+                },
+                // Multi-qty transactions (qty > 1)
+                MTD_MULTI_TRX: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $gte: ['$invoice_date', dates.startOfMonth] },
+                                    { $lte: ['$invoice_date', dates.selectedDate] },
+                                    { $eq: ['$transaction_type', 'IV'] },
+                                    { $gt: ['$total_sales_qty', 1] }
                                 ]
                             },
                             1, 0
@@ -1197,15 +1227,44 @@ export const getRetailEfficiency = async (
                         ]
                     }
                 },
-                PM_RAW_TRX: {
+                PM_SALES_TRX: {
                     $sum: {
                         $cond: [
                             {
                                 $and: [
                                     { $gte: ['$invoice_date', dates.startOfPM] },
                                     { $lte: ['$invoice_date', dates.endOfPM] },
-                                    { $in: ['$transaction_type', ['IV', 'IR']] },
+                                    { $eq: ['$transaction_type', 'IV'] },
                                     { $eq: ['$mh1_description', 'Sales'] }
+                                ]
+                            },
+                            1, 0
+                        ]
+                    }
+                },
+                PM_RETURN_TRX: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $gte: ['$invoice_date', dates.startOfPM] },
+                                    { $lte: ['$invoice_date', dates.endOfPM] },
+                                    { $eq: ['$transaction_type', 'CN'] }
+                                ]
+                            },
+                            1, 0
+                        ]
+                    }
+                },
+                PM_MULTI_TRX: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $gte: ['$invoice_date', dates.startOfPM] },
+                                    { $lte: ['$invoice_date', dates.endOfPM] },
+                                    { $eq: ['$transaction_type', 'IV'] },
+                                    { $gt: ['$total_sales_qty', 1] }
                                 ]
                             },
                             1, 0
@@ -1213,32 +1272,52 @@ export const getRetailEfficiency = async (
                     }
                 }
             }
-        },
-        {
-            $project: {
-                Location: '$_id',
-                MTD_ATV: { $cond: [{ $gt: ['$MTD_RAW_TRX', 0] }, { $divide: ['$MTD_RAW_SALE', '$MTD_RAW_TRX'] }, 0] },
-                PM_ATV: { $cond: [{ $gt: ['$PM_RAW_TRX', 0] }, { $divide: ['$PM_RAW_SALE', '$PM_RAW_TRX'] }, 0] },
-                MTD_BASKET_SIZE: { $cond: [{ $gt: ['$MTD_RAW_TRX', 0] }, { $divide: ['$MTD_RAW_QTY', '$MTD_RAW_TRX'] }, 0] },
-                PM_BASKET_SIZE: { $cond: [{ $gt: ['$PM_RAW_TRX', 0] }, { $divide: ['$PM_RAW_QTY', '$PM_RAW_TRX'] }, 0] },
-                MTD_CONVERSION_PCT: { $literal: 0 },
-                PM_CONVERSION_PCT: { $literal: 0 },
-                MTD_MULTIES_PCT: { $literal: 0 },
-                PM_MULTIES_PCT: { $literal: 0 },
-                MTD_FOOTFALL: { $literal: 0 },
-                PM_FOOTFALL: { $literal: 0 },
-                MTD_RAW_SALE: '$MTD_RAW_SALE',
-                MTD_RAW_TRX: '$MTD_RAW_TRX',
-                MTD_RAW_QTY: '$MTD_RAW_QTY',
-                MTD_RAW_MULTI_TRX: { $literal: 0 },
-                PM_RAW_SALE: '$PM_RAW_SALE',
-                PM_RAW_TRX: '$PM_RAW_TRX',
-                PM_RAW_QTY: '$PM_RAW_QTY',
-                PM_RAW_MULTI_TRX: { $literal: 0 },
-                _id: 0
-            }
         }
     ];
 
-    return await salesTx.aggregate(pipeline).toArray();
+    const salesData = await salesTx.aggregate(pipeline).toArray();
+    
+    // Combine sales data with footfall and calculate metrics
+    const result = salesData.map((row: any) => {
+        const location = row._id;
+        const footfall = footfallMap.get(location) || { MTD: 0, PM: 0 };
+        
+        const MTD_NET_TRX = row.MTD_SALES_TRX - row.MTD_RETURN_TRX;
+        const PM_NET_TRX = row.PM_SALES_TRX - row.PM_RETURN_TRX;
+        
+        const MTD_FOOTFALL = footfall.MTD || 0;
+        const PM_FOOTFALL = footfall.PM || 0;
+        
+        // Conversion % = (Net Transactions / Footfall) * 100
+        const MTD_CONVERSION_PCT = MTD_FOOTFALL > 0 ? (MTD_NET_TRX / MTD_FOOTFALL) * 100 : 0;
+        const PM_CONVERSION_PCT = PM_FOOTFALL > 0 ? (PM_NET_TRX / PM_FOOTFALL) * 100 : 0;
+        
+        // Multies % = (Multi-qty transactions / Total Sales transactions) * 100
+        const MTD_MULTIES_PCT = row.MTD_SALES_TRX > 0 ? (row.MTD_MULTI_TRX / row.MTD_SALES_TRX) * 100 : 0;
+        const PM_MULTIES_PCT = row.PM_SALES_TRX > 0 ? (row.PM_MULTI_TRX / row.PM_SALES_TRX) * 100 : 0;
+        
+        return {
+            Location: location,
+            MTD_ATV: MTD_NET_TRX > 0 ? row.MTD_RAW_SALE / MTD_NET_TRX : 0,
+            PM_ATV: PM_NET_TRX > 0 ? row.PM_RAW_SALE / PM_NET_TRX : 0,
+            MTD_BASKET_SIZE: MTD_NET_TRX > 0 ? row.MTD_RAW_QTY / MTD_NET_TRX : 0,
+            PM_BASKET_SIZE: PM_NET_TRX > 0 ? row.PM_RAW_QTY / PM_NET_TRX : 0,
+            MTD_CONVERSION_PCT: parseFloat(MTD_CONVERSION_PCT.toFixed(2)),
+            PM_CONVERSION_PCT: parseFloat(PM_CONVERSION_PCT.toFixed(2)),
+            MTD_MULTIES_PCT: parseFloat(MTD_MULTIES_PCT.toFixed(2)),
+            PM_MULTIES_PCT: parseFloat(PM_MULTIES_PCT.toFixed(2)),
+            MTD_FOOTFALL,
+            PM_FOOTFALL,
+            MTD_RAW_SALE: row.MTD_RAW_SALE,
+            MTD_RAW_TRX: MTD_NET_TRX,
+            MTD_RAW_QTY: row.MTD_RAW_QTY,
+            MTD_RAW_MULTI_TRX: row.MTD_MULTI_TRX,
+            PM_RAW_SALE: row.PM_RAW_SALE,
+            PM_RAW_TRX: PM_NET_TRX,
+            PM_RAW_QTY: row.PM_RAW_QTY,
+            PM_RAW_MULTI_TRX: row.PM_MULTI_TRX
+        };
+    });
+    
+    return result;
 };

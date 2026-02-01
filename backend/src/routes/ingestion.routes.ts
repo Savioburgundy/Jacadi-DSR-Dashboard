@@ -58,7 +58,7 @@ router.get('/logs', authenticateJWT, authorizeRole(['admin']), async (req, res) 
             .toArray();
         
         // Transform for frontend compatibility
-        const transformed = result.map(log => ({
+        const transformed = result.map((log: any) => ({
             id: log._id.toString(),
             filename: log.filename,
             status: log.status,
@@ -103,12 +103,11 @@ router.post('/upload/invoice', authenticateJWT, authorizeRole(['admin']), upload
         
         // Log success
         await logsCollection.insertOne({
-            id: uuidv4(),
             filename: `[MANUAL] ${filename}`,
             status: 'success',
             rows_added: rowCount,
             created_at: new Date()
-        });
+        } as any);
 
         // Move to archive
         const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
@@ -127,12 +126,11 @@ router.post('/upload/invoice', authenticateJWT, authorizeRole(['admin']), upload
         
         // Log failure
         await logsCollection.insertOne({
-            id: uuidv4(),
             filename: `[MANUAL] ${filename}`,
             status: 'failed',
             error_message: (error as Error).message,
             created_at: new Date()
-        });
+        } as any);
 
         // Clean up file on error
         if (fs.existsSync(filePath)) {
@@ -162,12 +160,11 @@ router.post('/upload/footfall', authenticateJWT, authorizeRole(['admin']), uploa
         
         // Log success
         await logsCollection.insertOne({
-            id: uuidv4(),
             filename: `[MANUAL-FOOTFALL] ${filename}`,
             status: 'success',
             rows_added: rowCount,
             created_at: new Date()
-        });
+        } as any);
 
         // Move to archive
         const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
@@ -186,12 +183,11 @@ router.post('/upload/footfall', authenticateJWT, authorizeRole(['admin']), uploa
         
         // Log failure
         await logsCollection.insertOne({
-            id: uuidv4(),
             filename: `[MANUAL-FOOTFALL] ${filename}`,
             status: 'failed',
             error_message: (error as Error).message,
             created_at: new Date()
-        });
+        } as any);
 
         // Clean up file on error
         if (fs.existsSync(filePath)) {
@@ -239,12 +235,11 @@ router.post('/sync/footfall', authenticateJWT, authorizeRole(['admin']), async (
             
             // Log success
             await logsCollection.insertOne({
-                id: uuidv4(),
                 filename: `[AUTO-FOOTFALL] ${file}`,
                 status: 'success',
                 rows_added: rowCount,
                 created_at: new Date()
-            });
+            } as any);
             
             // Archive file
             const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
@@ -261,12 +256,11 @@ router.post('/sync/footfall', authenticateJWT, authorizeRole(['admin']), async (
         console.error('❌ Footfall sync failed:', error);
         
         await logsCollection.insertOne({
-            id: uuidv4(),
             filename: '[AUTO-FOOTFALL] Sync Failed',
             status: 'failed',
             error_message: (error as Error).message,
             created_at: new Date()
-        });
+        } as any);
         
         res.status(500).json({ message: 'Footfall sync failed', error: (error as Error).message });
     }

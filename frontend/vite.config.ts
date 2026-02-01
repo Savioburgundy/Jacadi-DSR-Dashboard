@@ -11,7 +11,7 @@ export default defineConfig({
     allowedHosts: ['.emergentagent.com', '.emergent.host', 'localhost'],
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       }
     }

@@ -867,8 +867,17 @@ export const getOmniChannelDetails = async (
     brand?: string | string[], 
     category?: string | string[]
 ) => {
-    // Similar to getOmniChannelTmLm with additional ATV and Basket Size calculations
-    return getOmniChannelTmLm(baseDate, location, startDate, brand, category);
+    // Get base data from getOmniChannelTmLm
+    const data = await getOmniChannelTmLm(baseDate, location, startDate, brand, category);
+    
+    // Add calculated fields: MTD_ATV and MTD_BASKET_SIZE
+    return data.map((row: any) => ({
+        ...row,
+        MTD_ATV: row.MTD_TRX > 0 ? row.MTD_SALE / row.MTD_TRX : 0,
+        PM_ATV: row.PM_TRX > 0 ? row.PM_SALE / row.PM_TRX : 0,
+        MTD_BASKET_SIZE: row.MTD_TRX > 0 ? row.MTD_UNITS / row.MTD_TRX : 0,
+        PM_BASKET_SIZE: row.PM_TRX > 0 ? row.PM_UNITS / row.PM_TRX : 0
+    }));
 };
 
 export const getRetailOmniTotal = async (

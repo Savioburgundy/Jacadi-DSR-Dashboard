@@ -84,4 +84,122 @@ router.post('/download', authenticateJWT, authorizeRole(['admin']), async (req, 
     }
 });
 
+// Manual Upload: Invoice Details Report (Admin Only)
+router.post('/upload/invoice', authenticateJWT, authorizeRole(['admin']), upload.single('file'), async (req, res) => {
+    const logsCollection = getCollection('ingestion_logs');
+    
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const filePath = req.file.path;
+    const filename = req.file.filename;
+
+    try {
+        console.log(`📤 Manual upload: Processing invoice file ${filename}`);
+        
+        // Process the uploaded CSV
+        const rowCount = await processInvoiceCSV(filePath);
+        
+        // Log success
+        await logsCollection.insertOne({
+            id: uuidv4(),
+            filename: `[MANUAL] ${filename}`,
+            status: 'success',
+            rows_added: rowCount,
+            created_at: new Date()
+        });
+
+        // Move to archive
+        const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
+        if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
+        const archivePath = path.join(archiveDir, filename);
+        fs.renameSync(filePath, archivePath);
+
+        console.log(`✅ Manual upload successful: ${rowCount} invoice records processed`);
+        res.json({ 
+            message: 'Invoice file processed successfully', 
+            rows_added: rowCount,
+            filename: filename
+        });
+    } catch (error) {
+        console.error(`❌ Manual upload failed:`, error);
+        
+        // Log failure
+        await logsCollection.insertOne({
+            id: uuidv4(),
+            filename: `[MANUAL] ${filename}`,
+            status: 'failed',
+            error_message: (error as Error).message,
+            created_at: new Date()
+        });
+
+        // Clean up file on error
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        res.status(500).json({ message: 'Failed to process invoice file', error: (error as Error).message });
+    }
+});
+
+// Manual Upload: Footfall Report (Admin Only)
+router.post('/upload/footfall', authenticateJWT, authorizeRole(['admin']), upload.single('file'), async (req, res) => {
+    const logsCollection = getCollection('ingestion_logs');
+    
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const filePath = req.file.path;
+    const filename = req.file.filename;
+
+    try {
+        console.log(`📤 Manual upload: Processing footfall file ${filename}`);
+        
+        // Process the uploaded CSV
+        const rowCount = await processFootfallCSV(filePath);
+        
+        // Log success
+        await logsCollection.insertOne({
+            id: uuidv4(),
+            filename: `[MANUAL-FOOTFALL] ${filename}`,
+            status: 'success',
+            rows_added: rowCount,
+            created_at: new Date()
+        });
+
+        // Move to archive
+        const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
+        if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
+        const archivePath = path.join(archiveDir, filename);
+        fs.renameSync(filePath, archivePath);
+
+        console.log(`✅ Manual upload successful: ${rowCount} footfall records processed`);
+        res.json({ 
+            message: 'Footfall file processed successfully', 
+            rows_added: rowCount,
+            filename: filename
+        });
+    } catch (error) {
+        console.error(`❌ Manual footfall upload failed:`, error);
+        
+        // Log failure
+        await logsCollection.insertOne({
+            id: uuidv4(),
+            filename: `[MANUAL-FOOTFALL] ${filename}`,
+            status: 'failed',
+            error_message: (error as Error).message,
+            created_at: new Date()
+        });
+
+        // Clean up file on error
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        res.status(500).json({ message: 'Failed to process footfall file', error: (error as Error).message });
+    }
+});
+
 export default router;

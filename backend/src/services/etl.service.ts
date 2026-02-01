@@ -521,7 +521,7 @@ export const getRetailPerformance = async (
                                     { $gte: ['$_id.invoice_date', dates.startOfPM] },
                                     { $lte: ['$_id.invoice_date', dates.endOfPM] },
                                     { $ne: ['$_id.order_channel_name', 'E-Commerce'] },
-                                    { $in: ['$_id.transaction_type', ['IV', 'IR']] },
+                                    { $eq: ['$_id.transaction_type', 'IV'] },
                                     { $eq: ['$is_sales_trx', 1] }
                                 ]
                             },
@@ -538,7 +538,7 @@ export const getRetailPerformance = async (
                                     { $gte: ['$_id.invoice_date', dates.startOfPM] },
                                     { $lte: ['$_id.invoice_date', dates.endOfPM] },
                                     { $eq: ['$_id.order_channel_name', 'E-Commerce'] },
-                                    { $in: ['$_id.transaction_type', ['IV', 'IR']] },
+                                    { $eq: ['$_id.transaction_type', 'IV'] },
                                     { $eq: ['$is_sales_trx', 1] }
                                 ]
                             },

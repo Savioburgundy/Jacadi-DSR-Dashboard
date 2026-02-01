@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, AlertCircle, CheckCircle, RefreshCcw, Cloud } from 'lucide-react';
 import api from '../../services/api';
 
 interface ManualUploadProps {
@@ -10,8 +10,30 @@ interface ManualUploadProps {
 const ManualUpload: React.FC<ManualUploadProps> = ({ onClose, onSuccess }) => {
     const [uploading, setUploading] = useState(false);
     const [uploadType, setUploadType] = useState<'invoice' | 'footfall'>('invoice');
+    const [syncingFootfall, setSyncingFootfall] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string; rows?: number } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFootfallAutoSync = async () => {
+        setSyncingFootfall(true);
+        setResult(null);
+        
+        try {
+            const response = await api.post('/ingest/sync/footfall');
+            setResult({
+                success: true,
+                message: response.data.message,
+                rows: response.data.rows_added
+            });
+        } catch (error: any) {
+            setResult({
+                success: false,
+                message: error.response?.data?.message || error.message || 'Footfall sync failed'
+            });
+        } finally {
+            setSyncingFootfall(false);
+        }
+    };
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

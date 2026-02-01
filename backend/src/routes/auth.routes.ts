@@ -5,6 +5,15 @@ import { getCollection } from '../config/mongodb';
 
 const router = Router();
 
+const getJwtSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.warn('[AUTH] WARNING: JWT_SECRET not set, using insecure fallback');
+        return 'secret';
+    }
+    return secret;
+};
+
 // Login Route
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -25,7 +34,7 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign(
             { id: user._id.toString(), role: user.role, name: user.full_name },
-            process.env.JWT_SECRET || 'secret',
+            getJwtSecret(),
             { expiresIn: '24h' }
         );
 

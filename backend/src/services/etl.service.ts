@@ -1095,9 +1095,9 @@ export const getRetailEfficiency = async (
     brand?: string | string[], 
     category?: string | string[]
 ) => {
-    // Simplified version - returns basic efficiency metrics
     const dates = await getReportingDates(baseDate, startDate);
     const salesTx = getCollection('sales_transactions');
+    const footfallCollection = getCollection('footfall');
     
     const matchFilter: any = {};
     const locations = Array.isArray(location) ? location : (location ? [location] : []);
@@ -1107,6 +1107,43 @@ export const getRetailEfficiency = async (
     if (locations.length) matchFilter.location_name = { $in: locations };
     if (brands.length) matchFilter.brand_name = { $in: brands };
     if (categories.length) matchFilter.category_name = { $in: categories };
+
+    // Get footfall data for MTD and PM periods
+    const footfallData = await footfallCollection.aggregate([
+        {
+            $match: {
+                $or: [
+                    { date: { $gte: dates.startOfMonth, $lte: dates.selectedDate } },
+                    { date: { $gte: dates.startOfPM, $lte: dates.endOfPM } }
+                ]
+            }
+        },
+        {
+            $group: {
+                _id: '$location_name',
+                MTD_FOOTFALL: {
+                    $sum: {
+                        $cond: [
+                            { $and: [{ $gte: ['$date', dates.startOfMonth] }, { $lte: ['$date', dates.selectedDate] }] },
+                            '$footfall_count', 0
+                        ]
+                    }
+                },
+                PM_FOOTFALL: {
+                    $sum: {
+                        $cond: [
+                            { $and: [{ $gte: ['$date', dates.startOfPM] }, { $lte: ['$date', dates.endOfPM] }] },
+                            '$footfall_count', 0
+                        ]
+                    }
+                }
+            }
+        }
+    ]).toArray();
+    
+    const footfallMap = new Map(footfallData.map((f: any) => [f._id, { MTD: f.MTD_FOOTFALL, PM: f.PM_FOOTFALL }]));
+
+    // Get sales metrics - count NET transactions (Sales - Returns)
 
     const pipeline = [
         { $match: matchFilter },

@@ -5,6 +5,18 @@ import { getCollection } from '../config/mongodb';
 
 const router = Router();
 
+// User interface for type safety
+interface User {
+    _id: any;
+    email: string;
+    password_hash: string;
+    full_name: string;
+    role: string;
+    active?: number;
+    created_at?: Date;
+    updated_at?: Date;
+}
+
 const getJwtSecret = () => {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
@@ -20,7 +32,7 @@ router.post('/login', async (req, res) => {
 
     try {
         const users = getCollection('users');
-        const user = await users.findOne({ email });
+        const user = await users.findOne({ email }) as User | null;
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -62,7 +74,7 @@ router.get('/me', async (req: any, res) => {
         const user = await users.findOne(
             { _id: req.user.id },
             { projection: { password_hash: 0 } }
-        );
+        ) as User | null;
         
         if (!user) {
             return res.status(404).json({ message: 'User not found' });

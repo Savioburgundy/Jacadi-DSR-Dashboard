@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
         ).sort({ created_at: -1 }).limit(100).toArray();
         
         // Transform _id to id for frontend compatibility
-        const transformed = result.map(u => ({
+        const transformed = result.map((u: any) => ({
             id: u._id.toString(),
             email: u.email,
             full_name: u.full_name,
@@ -63,7 +63,7 @@ router.post('/', async (req, res) => {
             active: 1,
             created_at: now,
             updated_at: now
-        });
+        } as any);
 
         res.status(201).json({ 
             message: 'User created successfully', 

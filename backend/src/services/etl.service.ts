@@ -321,7 +321,7 @@ export const getReportingDates = async (requestedEndDate?: string, requestedStar
     if (!targetEndDateStr || targetEndDateStr === 'latest') {
         const salesTx = getCollection('sales_transactions');
         const result = await salesTx.find({}).sort({ invoice_date: -1 }).limit(1).toArray();
-        targetEndDateStr = result[0]?.invoice_date || new Date().toISOString().split('T')[0];
+        targetEndDateStr = (result[0] as any)?.invoice_date || new Date().toISOString().split('T')[0];
     }
 
     const endDate = new Date(targetEndDateStr!);
@@ -1087,7 +1087,7 @@ export const getLocations = async (brand?: string | string[]) => {
 
 export const getBrands = async () => {
     const salesTx = getCollection('sales_transactions');
-    const result = await salesTx.distinct('brand_name', { brand_name: { $ne: null, $ne: '' } });
+    const result = await salesTx.distinct('brand_name', { brand_name: { $nin: [null, ''] } });
     return result.sort();
 };
 
@@ -1096,7 +1096,7 @@ export const getCategories = async (brand?: string | string[], location?: string
     const brands = Array.isArray(brand) ? brand : (brand ? [brand] : []);
     const locations = Array.isArray(location) ? location : (location ? [location] : []);
     
-    const matchFilter: any = { category_name: { $ne: null, $ne: '' } };
+    const matchFilter: any = { category_name: { $nin: [null, ''] } };
     if (brands.length) matchFilter.brand_name = { $in: brands };
     if (locations.length) matchFilter.location_name = { $in: locations };
     
@@ -1110,7 +1110,7 @@ export const getLatestInvoiceDate = async (): Promise<string> => {
         .sort({ invoice_date: -1 })
         .limit(1)
         .toArray();
-    return result[0]?.invoice_date || new Date().toISOString().split('T')[0];
+    return (result[0] as any)?.invoice_date || new Date().toISOString().split('T')[0];
 };
 
 export const getRetailEfficiency = async (

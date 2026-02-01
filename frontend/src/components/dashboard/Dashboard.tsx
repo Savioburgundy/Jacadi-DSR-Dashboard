@@ -608,6 +608,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                 <span>Sync History</span>
                             </button>
                             <button
+                                onClick={() => setShowManualUpload(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-green-600 transition-all"
+                            >
+                                <Upload size={14} />
+                                <span>Upload CSV</span>
+                            </button>
+                            <button
                                 onClick={handleSync}
                                 disabled={isSyncing}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all ${isSyncing

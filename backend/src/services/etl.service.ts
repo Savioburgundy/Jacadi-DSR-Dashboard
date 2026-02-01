@@ -1057,7 +1057,10 @@ export const getCategories = async (brand?: string | string[], location?: string
 
 export const getLatestInvoiceDate = async (): Promise<string> => {
     const salesTx = getCollection('sales_transactions');
-    const result = await salesTx.find({}).sort({ invoice_date: -1 }).limit(1).toArray();
+    const result = await salesTx.find({}, { projection: { invoice_date: 1, _id: 0 } })
+        .sort({ invoice_date: -1 })
+        .limit(1)
+        .toArray();
     return result[0]?.invoice_date || new Date().toISOString().split('T')[0];
 };
 

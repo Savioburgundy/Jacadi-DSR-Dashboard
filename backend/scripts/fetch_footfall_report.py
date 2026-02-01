@@ -24,6 +24,29 @@ def get_yesterday_date():
     yesterday = datetime.now() - timedelta(days=1)
     return yesterday.strftime("%d-%m-%Y")
 
+def convert_xlsx_to_csv(xlsx_path, csv_path):
+    """Convert XLSX file to CSV using openpyxl"""
+    try:
+        import openpyxl
+        import csv
+        
+        wb = openpyxl.load_workbook(xlsx_path)
+        sheet = wb.active
+        
+        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            for row in sheet.iter_rows(values_only=True):
+                writer.writerow(row)
+        
+        logger.info(f"Converted {xlsx_path} to {csv_path}")
+        return csv_path
+    except ImportError:
+        logger.warning("openpyxl not installed, keeping xlsx file")
+        return xlsx_path
+    except Exception as e:
+        logger.error(f"Failed to convert xlsx to csv: {e}")
+        return xlsx_path
+
 def download_footfall_report():
     """
     Automates the download of hourly footfall report from Surecount portal.
@@ -62,30 +85,21 @@ def download_footfall_report():
             page.click('text=Tabular Report')
             page.wait_for_timeout(3000)
             
-            # The Data Output dropdown shows "Footfall - Summary" by default
-            # We need to change it to "Footfall - Hourly"
+            # Select "Footfall - Hourly" from Data Output dropdown
             logger.info("Selecting Footfall - Hourly output...")
-            
-            # Try to find and click the Data Output dropdown
-            # The dropdown label says "Data Ouput" (with typo in the portal)
             try:
-                # Select by visible label text near the dropdown
-                page.locator('select').filter(has_text='Footfall').first.select_option(label='Footfall - Hourly')
-            except:
-                try:
-                    # Try finding all selects and select the one with Footfall options
-                    selects = page.locator('select').all()
-                    for select in selects:
-                        try:
-                            options = select.locator('option').all_text_contents()
-                            if any('Hourly' in opt for opt in options):
-                                select.select_option(label='Footfall - Hourly')
-                                logger.info("Found and selected Footfall - Hourly")
-                                break
-                        except:
-                            continue
-                except Exception as e:
-                    logger.warning(f"Could not select Footfall - Hourly: {e}")
+                selects = page.locator('select').all()
+                for select in selects:
+                    try:
+                        options = select.locator('option').all_text_contents()
+                        if any('Hourly' in opt for opt in options):
+                            select.select_option(label='Footfall - Hourly')
+                            logger.info("Found and selected Footfall - Hourly")
+                            break
+                    except:
+                        continue
+            except Exception as e:
+                logger.warning(f"Could not select Footfall - Hourly: {e}")
             
             page.wait_for_timeout(1000)
             
@@ -112,9 +126,6 @@ def download_footfall_report():
             page.wait_for_timeout(5000)
             logger.info("Report updated, preparing download...")
             
-            # Take screenshot before download
-            page.screenshot(path="/tmp/surecount_before_download.png")
-            
             # Click Download button
             logger.info("Downloading report...")
             with page.expect_download(timeout=60000) as download_info:
@@ -128,14 +139,26 @@ def download_footfall_report():
             
             download = download_info.value
             
-            # Save the file
+            # Save the file (it's actually XLSX, not CSV)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"footfall_hourly_{report_date.replace('-', '')}_{timestamp}.csv"
-            filepath = os.path.join(DOWNLOAD_DIR, filename)
-            download.save_as(filepath)
+            xlsx_filename = f"footfall_hourly_{report_date.replace('-', '')}_{timestamp}.xlsx"
+            xlsx_filepath = os.path.join(DOWNLOAD_DIR, xlsx_filename)
+            download.save_as(xlsx_filepath)
             
-            logger.info(f"✅ Footfall report downloaded: {filepath}")
-            return filepath
+            logger.info(f"Downloaded Excel file: {xlsx_filepath}")
+            
+            # Convert XLSX to CSV
+            csv_filename = xlsx_filename.replace('.xlsx', '.csv')
+            csv_filepath = os.path.join(DOWNLOAD_DIR, csv_filename)
+            final_path = convert_xlsx_to_csv(xlsx_filepath, csv_filepath)
+            
+            # Remove the xlsx file if conversion was successful
+            if final_path.endswith('.csv') and os.path.exists(xlsx_filepath):
+                os.remove(xlsx_filepath)
+                logger.info(f"Removed original xlsx file")
+            
+            logger.info(f"✅ Footfall report ready: {final_path}")
+            return final_path
             
         except PlaywrightTimeout as e:
             logger.error(f"Timeout error: {e}")

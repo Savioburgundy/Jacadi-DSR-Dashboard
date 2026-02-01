@@ -450,8 +450,9 @@ export const getRetailPerformance = async (
                                     { $gte: ['$_id.invoice_date', dates.startOfMonth] },
                                     { $lte: ['$_id.invoice_date', dates.selectedDate] },
                                     { $ne: ['$_id.order_channel_name', 'E-Commerce'] },
-                                    { $in: ['$_id.transaction_type', ['IV', 'IR']] },
-                                    { $eq: ['$is_sales_trx', 1] }
+                                    { $eq: ['$_id.transaction_type', 'IV'] },
+                                    { $eq: ['$is_sales_trx', 1] },
+                                    { $not: { $regexMatch: { input: { $ifNull: ['$_id.sales_person_name', ''] }, regex: /Whatsapp/i } } }
                                 ]
                             },
                             1,
@@ -472,7 +473,7 @@ export const getRetailPerformance = async (
                                             { $regexMatch: { input: { $ifNull: ['$_id.sales_person_name', ''] }, regex: /Whatsapp/i } }
                                         ]
                                     },
-                                    { $in: ['$_id.transaction_type', ['IV', 'IR']] },
+                                    { $eq: ['$_id.transaction_type', 'IV'] },
                                     { $eq: ['$is_sales_trx', 1] }
                                 ]
                             },

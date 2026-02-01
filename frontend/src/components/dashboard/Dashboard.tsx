@@ -636,6 +636,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
             {/* Sync History Modal */}
             {showSyncHistory && <SyncHistory onClose={() => setShowSyncHistory(false)} />}
 
+            {/* Manual Upload Modal */}
+            {showManualUpload && (
+                <ManualUpload 
+                    onClose={() => setShowManualUpload(false)} 
+                    onSuccess={handleManualUploadSuccess}
+                />
+            )}
+
             {loading ? (
                 <div className="flex flex-col items-center justify-center h-64 space-y-4">
                     <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>

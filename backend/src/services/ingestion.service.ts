@@ -92,12 +92,11 @@ export const runIngestion = async () => {
 
             // 3. Log success
             await logsCollection.insertOne({
-                id: uuidv4(),
                 filename: file,
                 status: 'success',
                 rows_added: rowCount,
                 created_at: new Date()
-            });
+            } as any);
             console.log(`✅ Successfully ingested ${rowCount} rows from ${file}`);
 
             // 4. Move to archive
@@ -119,12 +118,11 @@ export const runIngestion = async () => {
         } catch (err) {
             console.error(`❌ Error processing ${file}:`, err);
             await logsCollection.insertOne({
-                id: uuidv4(),
                 filename: file,
                 status: 'failed',
                 error_message: err instanceof Error ? err.message : String(err),
                 created_at: new Date()
-            });
+            } as any);
         }
     }
 };

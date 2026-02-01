@@ -102,15 +102,18 @@ OLABI_PASSWORD=<olabi-credentials>
 - 3 store locations
 
 ## Known Issues
-1. **Playwright Automation** - Olabi portal UI changed, locators need updating
+1. **Playwright Automation for Olabi Portal** - Selector timeout on 'Selection Criteria' link
    - Workaround: Use Manual Upload feature
+   - Script: `/app/backend/scripts/fetch_jacadi_report.py`
 
-## Next Steps
+## Next Steps (P1)
 1. Fix Playwright script to match current Olabi Portal UI
-2. Test manual upload with actual Olabi export files
-3. Add email notifications for sync completion/failure
+2. Set up daily cron jobs for both Olabi & Surecount automation
+3. Test manual upload with actual Olabi export files
 
-## Future Enhancements
+## Future Enhancements (P2)
+- Toast notifications for sync operations (using sonner)
+- MongoDB backup mechanism (using mongodump)
 - Export to Excel functionality
 - User management improvements
 - Dashboard drill-down filter enhancements

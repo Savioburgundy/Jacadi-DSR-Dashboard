@@ -62,31 +62,56 @@ def download_footfall_report():
             page.click('text=Tabular Report')
             page.wait_for_timeout(3000)
             
-            # Set date range (yesterday to yesterday for daily report)
+            # Select "Footfall - Hourly" from Data Output dropdown FIRST
+            # (before trying to manipulate dates, as it may affect the form)
+            logger.info("Selecting Footfall - Hourly output...")
+            page.select_option('#ddlReport', label='Footfall - Hourly')
+            page.wait_for_timeout(1000)
+            
+            # The date fields use a jQuery datepicker - we need to use JavaScript to set them
             logger.info(f"Setting date range to: {report_date}")
             
-            # Clear and fill From date
-            from_input = page.locator('input[placeholder*="From"], input:near(:text("From"))').first
-            await_clear_and_fill(page, from_input, report_date)
-            
-            # Clear and fill To date
-            to_input = page.locator('input[placeholder*="To"], input:near(:text("To"))').first
-            await_clear_and_fill(page, to_input, report_date)
-            
-            # Select "Footfall - Hourly" from Data Output dropdown
-            logger.info("Selecting Footfall - Hourly output...")
-            page.select_option('select:near(:text("Data Ouput"))', label='Footfall - Hourly')
+            # Set From date using JavaScript
+            page.evaluate(f'''
+                document.getElementById('txtFrom').value = '{report_date}';
+            ''')
             page.wait_for_timeout(500)
             
-            # Click Update Report to refresh data
+            # Set To date using JavaScript
+            page.evaluate(f'''
+                document.getElementById('txtTo').value = '{report_date}';
+            ''')
+            page.wait_for_timeout(500)
+            
+            # Click the Update/Submit button
             logger.info("Updating report...")
-            page.click('button:has-text("Update Report")')
+            # Try different button selectors
+            try:
+                page.click('#btnSubmit', timeout=5000)
+            except:
+                try:
+                    page.click('input[value="Update Report"]', timeout=5000)
+                except:
+                    try:
+                        page.click('button:has-text("Update")', timeout=5000)
+                    except:
+                        # Try clicking any submit-like button
+                        page.click('[type="submit"]', timeout=5000)
+            
             page.wait_for_timeout(5000)
+            logger.info("Report updated, preparing download...")
             
             # Click Download button
             logger.info("Downloading report...")
             with page.expect_download(timeout=60000) as download_info:
-                page.click('button:has-text("Download")')
+                # Try different download button selectors
+                try:
+                    page.click('#btnDownload', timeout=5000)
+                except:
+                    try:
+                        page.click('button:has-text("Download")', timeout=5000)
+                    except:
+                        page.click('a:has-text("Download")', timeout=5000)
             
             download = download_info.value
             
@@ -101,26 +126,18 @@ def download_footfall_report():
             
         except PlaywrightTimeout as e:
             logger.error(f"Timeout error: {e}")
+            # Take screenshot for debugging
+            try:
+                page.screenshot(path="/tmp/surecount_error.png")
+                logger.info("Error screenshot saved to /tmp/surecount_error.png")
+            except:
+                pass
             raise
         except Exception as e:
             logger.error(f"Automation Failed: {e}")
             raise
         finally:
             browser.close()
-
-def await_clear_and_fill(page, locator, value):
-    """Helper to clear and fill an input field"""
-    try:
-        locator.click()
-        page.wait_for_timeout(200)
-        locator.fill('')
-        page.wait_for_timeout(200)
-        locator.fill(value)
-        page.wait_for_timeout(200)
-        # Press Tab to trigger any date picker validation
-        locator.press('Tab')
-    except Exception as e:
-        logger.warning(f"Could not fill date field: {e}")
 
 if __name__ == "__main__":
     try:

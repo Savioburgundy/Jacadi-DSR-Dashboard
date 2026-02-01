@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
         const result = await users.find(
             {},
             { projection: { password_hash: 0 } }
-        ).sort({ created_at: -1 }).toArray();
+        ).sort({ created_at: -1 }).limit(100).toArray();
         
         // Transform _id to id for frontend compatibility
         const transformed = result.map(u => ({

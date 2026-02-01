@@ -183,7 +183,7 @@ export const processInvoiceCSV = async (filePath: string): Promise<number> => {
 
 export const processFootfallCSV = async (filePath: string): Promise<number> => {
     return new Promise((resolve, reject) => {
-        const rows: any[] = [];
+        const dailyTotals: Map<string, { location_name: string, footfall_count: number }> = new Map();
 
         fs.createReadStream(filePath)
             .pipe(csv())
@@ -200,21 +200,45 @@ export const processFootfallCSV = async (filePath: string): Promise<number> => {
 
                     const count = parseInt(row['Total IN'] || '0');
                     if (count > 0) {
-                        rows.push({
-                            date,
-                            location_name: locationName,
-                            footfall_count: count
-                        });
+                        // Aggregate by date + location (sum hourly data)
+                        const key = `${date}_${locationName}`;
+                        if (dailyTotals.has(key)) {
+                            const existing = dailyTotals.get(key)!;
+                            existing.footfall_count += count;
+                        } else {
+                            dailyTotals.set(key, {
+                                location_name: locationName,
+                                footfall_count: count
+                            });
+                        }
                     }
                 } catch (e) { console.error(e); }
             })
             .on('end', async () => {
                 try {
+                    const rows: any[] = [];
+                    for (const [key, value] of dailyTotals) {
+                        const [date] = key.split('_');
+                        rows.push({
+                            date,
+                            location_name: value.location_name,
+                            footfall_count: value.footfall_count
+                        });
+                    }
+                    
                     if (rows.length > 0) {
                         const footfall = getCollection('footfall');
-                        await footfall.insertMany(rows);
+                        
+                        // Upsert: Update if exists for that date+location, otherwise insert
+                        for (const row of rows) {
+                            await footfall.updateOne(
+                                { date: row.date, location_name: row.location_name },
+                                { $set: row },
+                                { upsert: true }
+                            );
+                        }
                     }
-                    console.log(`✅ Processed ${rows.length} footfall records`);
+                    console.log(`✅ Processed ${rows.length} footfall records (daily aggregated)`);
                     resolve(rows.length);
                 } catch (error) {
                     reject(error);

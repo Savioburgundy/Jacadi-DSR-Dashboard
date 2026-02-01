@@ -8,16 +8,34 @@ import { exec } from 'child_process';
 export const downloadJacadiReport = async () => {
     return new Promise((resolve, reject) => {
         const scriptPath = path.join(__dirname, '../../scripts/fetch_jacadi_report.py');
-        console.log(`Triggering automation script: ${scriptPath}`);
+        console.log(`Triggering Olabi automation script: ${scriptPath}`);
 
         // Use the venv Python which has Playwright installed
-        exec(`/root/.venv/bin/python "${scriptPath}"`, (error, stdout, stderr) => {
+        exec(`/root/.venv/bin/python "${scriptPath}"`, { timeout: 180000 }, (error, stdout, stderr) => {
             if (error) {
-                console.error(`Automation Error: ${error.message}`);
+                console.error(`Olabi Automation Error: ${error.message}`);
                 reject(error);
                 return;
             }
-            console.log(`Automation Output: ${stdout}`);
+            console.log(`Olabi Automation Output: ${stdout}`);
+            resolve(stdout);
+        });
+    });
+};
+
+export const downloadFootfallReport = async () => {
+    return new Promise((resolve, reject) => {
+        const scriptPath = path.join(__dirname, '../../scripts/fetch_footfall_report.py');
+        console.log(`Triggering Surecount footfall automation script: ${scriptPath}`);
+
+        // Use the venv Python which has Playwright installed
+        exec(`/root/.venv/bin/python "${scriptPath}"`, { timeout: 180000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Surecount Automation Error: ${error.message}`);
+                reject(error);
+                return;
+            }
+            console.log(`Surecount Automation Output: ${stdout}`);
             resolve(stdout);
         });
     });

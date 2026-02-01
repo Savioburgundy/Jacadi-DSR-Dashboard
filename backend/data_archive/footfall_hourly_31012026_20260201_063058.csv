@@ -1,0 +1,23 @@
+Store Code,Store Name,Region,Date,Hour,Total IN,Adult IN,Child IN,Group IN,Staff IN
+JP002,Mall Of Asia,South,31/01/2026,11,7,6,0,0,1
+JP001,Palladium Mall,West,31/01/2026,11,8,6,0,0,2
+JP002,Mall Of Asia,South,31/01/2026,12,13,9,0,0,4
+JP001,Palladium Mall,West,31/01/2026,12,13,13,0,2,0
+JP002,Mall Of Asia,South,31/01/2026,13,10,8,0,0,2
+JP001,Palladium Mall,West,31/01/2026,13,5,3,1,0,1
+JP002,Mall Of Asia,South,31/01/2026,14,11,9,1,0,1
+JP001,Palladium Mall,West,31/01/2026,14,6,6,0,1,0
+JP002,Mall Of Asia,South,31/01/2026,15,16,12,3,2,1
+JP001,Palladium Mall,West,31/01/2026,15,15,12,2,2,1
+JP002,Mall Of Asia,South,31/01/2026,16,39,27,12,7,0
+JP001,Palladium Mall,West,31/01/2026,16,12,10,0,1,2
+JP002,Mall Of Asia,South,31/01/2026,17,25,16,5,2,4
+JP001,Palladium Mall,West,31/01/2026,17,2,2,0,0,0
+JP002,Mall Of Asia,South,31/01/2026,18,17,9,5,2,3
+JP001,Palladium Mall,West,31/01/2026,18,19,14,1,1,4
+JP002,Mall Of Asia,South,31/01/2026,19,20,11,9,5,0
+JP001,Palladium Mall,West,31/01/2026,19,8,6,0,0,2
+JP002,Mall Of Asia,South,31/01/2026,20,9,8,1,1,0
+JP001,Palladium Mall,West,31/01/2026,20,9,7,1,1,1
+JP002,Mall Of Asia,South,31/01/2026,21,10,7,1,1,2
+JP001,Palladium Mall,West,31/01/2026,21,7,6,0,0,1

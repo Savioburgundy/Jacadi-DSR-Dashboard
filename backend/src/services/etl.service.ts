@@ -388,16 +388,19 @@ export const getRetailPerformance = async (
     const pipeline = [
         { $match: matchFilter },
         {
+            // First group by invoice_no to aggregate all line items
             $group: {
                 _id: {
                     location_name: '$location_name',
                     invoice_no: '$invoice_no',
                     invoice_date: '$invoice_date',
                     order_channel_name: '$order_channel_name',
-                    transaction_type: '$transaction_type',
-                    sales_person_name: '$sales_person_name'
+                    transaction_type: '$transaction_type'
                 },
+                // Check if ANY line item has mh1_description = 'Sales'
                 is_sales_trx: { $max: { $cond: [{ $eq: ['$mh1_description', 'Sales'] }, 1, 0] } },
+                // Check if ANY sales_person contains 'Whatsapp'
+                is_whatsapp: { $max: { $cond: [{ $regexMatch: { input: { $ifNull: ['$sales_person_name', ''] }, regex: /Whatsapp/i } }, 1, 0] } },
                 total_qty: { $sum: { $cond: [{ $eq: ['$mh1_description', 'Sales'] }, '$total_sales_qty', 0] } },
                 total_nett: { $sum: '$nett_invoice_value' }
             }

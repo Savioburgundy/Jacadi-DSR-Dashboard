@@ -417,7 +417,7 @@ export const getRetailPerformance = async (
                                     { $gte: ['$_id.invoice_date', dates.startOfMonth] },
                                     { $lte: ['$_id.invoice_date', dates.selectedDate] },
                                     { $ne: ['$_id.order_channel_name', 'E-Commerce'] },
-                                    { $not: { $regexMatch: { input: { $ifNull: ['$_id.sales_person_name', ''] }, regex: /Whatsapp/i } } }
+                                    { $eq: ['$is_whatsapp', 0] }
                                 ]
                             },
                             '$total_nett',
@@ -435,7 +435,7 @@ export const getRetailPerformance = async (
                                     {
                                         $or: [
                                             { $eq: ['$_id.order_channel_name', 'E-Commerce'] },
-                                            { $regexMatch: { input: { $ifNull: ['$_id.sales_person_name', ''] }, regex: /Whatsapp/i } }
+                                            { $eq: ['$is_whatsapp', 1] }
                                         ]
                                     }
                                 ]
@@ -455,7 +455,7 @@ export const getRetailPerformance = async (
                                     { $ne: ['$_id.order_channel_name', 'E-Commerce'] },
                                     { $eq: ['$_id.transaction_type', 'IV'] },
                                     { $eq: ['$is_sales_trx', 1] },
-                                    { $not: { $regexMatch: { input: { $ifNull: ['$_id.sales_person_name', ''] }, regex: /Whatsapp/i } } }
+                                    { $eq: ['$is_whatsapp', 0] }
                                 ]
                             },
                             1,
@@ -473,7 +473,7 @@ export const getRetailPerformance = async (
                                     {
                                         $or: [
                                             { $eq: ['$_id.order_channel_name', 'E-Commerce'] },
-                                            { $regexMatch: { input: { $ifNull: ['$_id.sales_person_name', ''] }, regex: /Whatsapp/i } }
+                                            { $eq: ['$is_whatsapp', 1] }
                                         ]
                                     },
                                     { $eq: ['$_id.transaction_type', 'IV'] },

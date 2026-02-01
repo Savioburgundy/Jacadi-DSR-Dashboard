@@ -1083,7 +1083,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                                 <td className={`px-6 py-4 text-right ${trxGrowth >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
                                                     {Math.abs(trxGrowth).toFixed(0)}%
                                                 </td>
-                                                <td className="px-6 py-4 text-right text-slate-500">{formatCurrency(totalYtdSale)}</td>
+                                                <td className="px-6 py-4 text-right text-slate-500">{formatCurrency(totalYtd)}</td>
                                                 <td className="px-6 py-4 text-right text-slate-500">{formatNumber(totalYtdTrx)}</td>
                                                 <td className="px-6 py-4 text-right text-slate-500">{formatNumber(totalYtdTrx)}</td>
                                                 <td className="px-6 py-4 text-right text-slate-500">{formatNumber(totalYtdTrx)}</td>

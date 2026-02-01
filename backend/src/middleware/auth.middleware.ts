@@ -8,6 +8,7 @@ export interface AuthRequest extends Request {
         org_id?: string;
     };
 }
+
 const getJwtSecret = () => {
     const secret = process.env.JWT_SECRET;
     if (!secret) {

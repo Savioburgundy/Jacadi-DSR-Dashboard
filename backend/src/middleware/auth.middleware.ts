@@ -8,6 +8,14 @@ export interface AuthRequest extends Request {
         org_id?: string;
     };
 }
+const getJwtSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.warn('[AUTH] WARNING: JWT_SECRET not set, using insecure fallback');
+        return 'secret';
+    }
+    return secret;
+};
 
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.split(' ')[1];

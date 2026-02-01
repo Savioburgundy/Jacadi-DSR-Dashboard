@@ -62,51 +62,64 @@ def download_footfall_report():
             page.click('text=Tabular Report')
             page.wait_for_timeout(3000)
             
-            # Select "Footfall - Hourly" from Data Output dropdown FIRST
-            # (before trying to manipulate dates, as it may affect the form)
+            # The Data Output dropdown shows "Footfall - Summary" by default
+            # We need to change it to "Footfall - Hourly"
             logger.info("Selecting Footfall - Hourly output...")
-            page.select_option('#ddlReport', label='Footfall - Hourly')
-            page.wait_for_timeout(1000)
             
-            # The date fields use a jQuery datepicker - we need to use JavaScript to set them
-            logger.info(f"Setting date range to: {report_date}")
-            
-            # Set From date using JavaScript
-            page.evaluate(f'''
-                document.getElementById('txtFrom').value = '{report_date}';
-            ''')
-            page.wait_for_timeout(500)
-            
-            # Set To date using JavaScript
-            page.evaluate(f'''
-                document.getElementById('txtTo').value = '{report_date}';
-            ''')
-            page.wait_for_timeout(500)
-            
-            # Click the Update/Submit button
-            logger.info("Updating report...")
-            # Try different button selectors
+            # Try to find and click the Data Output dropdown
+            # The dropdown label says "Data Ouput" (with typo in the portal)
             try:
-                page.click('#btnSubmit', timeout=5000)
+                # Select by visible label text near the dropdown
+                page.locator('select').filter(has_text='Footfall').first.select_option(label='Footfall - Hourly')
             except:
                 try:
-                    page.click('input[value="Update Report"]', timeout=5000)
+                    # Try finding all selects and select the one with Footfall options
+                    selects = page.locator('select').all()
+                    for select in selects:
+                        try:
+                            options = select.locator('option').all_text_contents()
+                            if any('Hourly' in opt for opt in options):
+                                select.select_option(label='Footfall - Hourly')
+                                logger.info("Found and selected Footfall - Hourly")
+                                break
+                        except:
+                            continue
+                except Exception as e:
+                    logger.warning(f"Could not select Footfall - Hourly: {e}")
+            
+            page.wait_for_timeout(1000)
+            
+            # Set date range using JavaScript (dates are readonly with datepicker)
+            logger.info(f"Setting date range to: {report_date}")
+            page.evaluate(f'''
+                var fromInput = document.querySelector('input[id*="txtFrom"], input[name*="txtFrom"]');
+                var toInput = document.querySelector('input[id*="txtTo"], input[name*="txtTo"]');
+                if (fromInput) fromInput.value = '{report_date}';
+                if (toInput) toInput.value = '{report_date}';
+            ''')
+            page.wait_for_timeout(500)
+            
+            # Click Update Report button
+            logger.info("Clicking Update Report...")
+            try:
+                page.click('text=Update Report', timeout=10000)
+            except:
+                try:
+                    page.click('input[value*="Update"]', timeout=5000)
                 except:
-                    try:
-                        page.click('button:has-text("Update")', timeout=5000)
-                    except:
-                        # Try clicking any submit-like button
-                        page.click('[type="submit"]', timeout=5000)
+                    page.click('button:has-text("Update")', timeout=5000)
             
             page.wait_for_timeout(5000)
             logger.info("Report updated, preparing download...")
             
+            # Take screenshot before download
+            page.screenshot(path="/tmp/surecount_before_download.png")
+            
             # Click Download button
             logger.info("Downloading report...")
             with page.expect_download(timeout=60000) as download_info:
-                # Try different download button selectors
                 try:
-                    page.click('#btnDownload', timeout=5000)
+                    page.click('text=Download', timeout=10000)
                 except:
                     try:
                         page.click('button:has-text("Download")', timeout=5000)
@@ -126,7 +139,6 @@ def download_footfall_report():
             
         except PlaywrightTimeout as e:
             logger.error(f"Timeout error: {e}")
-            # Take screenshot for debugging
             try:
                 page.screenshot(path="/tmp/surecount_error.png")
                 logger.info("Error screenshot saved to /tmp/surecount_error.png")
@@ -135,6 +147,10 @@ def download_footfall_report():
             raise
         except Exception as e:
             logger.error(f"Automation Failed: {e}")
+            try:
+                page.screenshot(path="/tmp/surecount_error.png")
+            except:
+                pass
             raise
         finally:
             browser.close()

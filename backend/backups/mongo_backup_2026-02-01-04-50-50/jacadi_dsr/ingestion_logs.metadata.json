@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"created_at":{"$numberInt":"-1"}},"name":"created_at_-1"}],"uuid":"53d552aadf0843dc8b5049989481eda1","collectionName":"ingestion_logs","type":"collection"}

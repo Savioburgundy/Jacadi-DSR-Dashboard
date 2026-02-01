@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"location_name":{"$numberInt":"1"},"report_date":{"$numberInt":"1"}},"name":"location_name_1_report_date_1","unique":true}],"uuid":"061bfd378f7b4805bb7283d2089ac305","collectionName":"location_efficiency","type":"collection"}

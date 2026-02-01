@@ -3,143 +3,106 @@
 ## Original Problem Statement
 Build a premium "Jacadi Daily Sales Report (DSR) Dashboard" with automated data sync from Olabi portal.
 
-## Current Status: FUNCTIONAL ✅
+## Current Status: DEPLOYMENT READY ✅
 
-### What's Been Implemented (Jan 31, 2026)
+### Deployment Fixes Applied (Feb 1, 2026)
+- ✅ Removed SQLite and PostgreSQL dependencies from package.json
+- ✅ Removed local MongoDB from supervisor config (using managed MongoDB)
+- ✅ Deleted all legacy SQLite scripts and database file
+- ✅ Fixed JWT_SECRET fallback warnings
+- ✅ Fixed PORT fallback to 8001
+- ✅ Added Manual CSV Upload feature as backup for automation
+
+### What's Implemented
 
 #### Core Dashboard
-- ✅ Full-width responsive layout
-- ✅ Dark/glassmorphism UI theme
-- ✅ Multi-store sales breakdown:
-  - Jacadi Palladium
-  - Jacadi MOA
-  - Shopify Webstore
-- ✅ KPI Cards: Revenue, Transactions, ATV, Active Stores
-- ✅ Multiple dashboard views:
-  - Retail + Whatsapp Sales
-  - Retail + Whatsapp Sales (Conversions)
-  - Whatsapp Sale
-  - Omni Channel TM vs LM
-  - Omni Channel
-  - Retail + Omni
-  - Analytics
+- Full-width responsive layout with dark/glassmorphism UI
+- Multi-store sales breakdown: Jacadi Palladium, Jacadi MOA, Shopify Webstore
+- KPI Cards: Revenue, Transactions, ATV, Active Stores
+- 7 Dashboard views: Retail+Whatsapp Sales, Conversions, Whatsapp Sale, Omni Channel TM vs LM, Omni Channel, Retail+Omni, Analytics
 
 #### Authentication
-- ✅ JWT-based login
-- ✅ Role-based access (admin role for sync)
-- ✅ Credentials: `admin@example.com` / `password`
+- JWT-based login with role-based access
+- Credentials: `admin@example.com` / `password`
 
-#### Data Sync Automation (Sync Data Button)
-- ✅ Playwright automation script for Olabi portal
-- ✅ Login, navigate to Reports, download Invoice Detail CSV
-- ✅ MongoDB backup before ingestion (via mongodump if available)
-- ✅ CSV parsing and ingestion pipeline
-- ✅ 6:00 AM daily cron job configured
+#### Data Ingestion Options
+1. **Automated Sync (Sync Data button)** - Playwright automation for Olabi portal
+   - Status: Requires Olabi portal UI updates (locators need fixing)
+2. **Manual Upload (Upload CSV button)** - NEW
+   - Upload Invoice Details CSV
+   - Upload Footfall Data CSV
+   - Files processed, logged, and archived
 
-### Database Migration (Jan 31, 2026) ✅
-- **Migrated from SQLite to MongoDB** for deployment compatibility
-- All data successfully transferred:
-  - 15,204 sales transactions
-  - 6,627 footfall records
-  - 4 users
-  - 9 ingestion logs
-  - 2 location efficiency records
-- All SQL queries converted to MongoDB aggregation pipelines
-- Indexes created for optimal query performance
-
-#### Technical Stack
+### Technical Stack
 - **Backend**: Node.js + Express + TypeScript
 - **Frontend**: React + Vite + TypeScript + TailwindCSS
-- **Database**: MongoDB (migrated from SQLite)
+- **Database**: MongoDB (managed)
 - **Automation**: Python + Playwright
-
-### Olabi Portal Credentials
-- URL: https://login.olabi.ooo/
-- Username: JPHO@JP
-- Password: jPHO@JP@657
 
 ### Key API Endpoints
 - `POST /api/auth/login` - User login
 - `GET /api/auth/me` - Current user
-- `POST /api/ingest/run` - Trigger manual sync (Admin only)
-- `POST /api/ingest/download` - Download CSV only
-- `GET /api/ingest/logs` - Get ingestion history
-- `GET /api/dashboards/latest-date` - Get latest data date
-- `GET /api/dashboards/:id/*` - Dashboard data endpoints
-- `GET /api/analytics/*` - Analytics endpoints
+- `POST /api/ingest/run` - Trigger automated sync
+- `POST /api/ingest/upload/invoice` - Manual invoice upload
+- `POST /api/ingest/upload/footfall` - Manual footfall upload
+- `GET /api/ingest/logs` - Sync history
+- `GET /api/dashboards/*` - Dashboard data endpoints
 
 ### Database Schema (MongoDB Collections)
-- `users` - Authentication (email, password_hash, full_name, role)
-- `sales_transactions` - Sales data (invoice_no, invoice_date, location_name, nett_invoice_value, etc.)
-- `footfall` - Store footfall (date, location_name, footfall_count)
+- `users` - Authentication
+- `sales_transactions` - Sales data
+- `footfall` - Store footfall
 - `location_efficiency` - Efficiency metrics
-- `ingestion_logs` - Sync history (filename, status, rows_added)
+- `ingestion_logs` - Sync history
 
 ### File Structure
 ```
 /app/
 ├── backend/                    # Node.js/Express/TypeScript + MongoDB
 │   ├── src/
-│   │   ├── app.ts              # Main entry (with MongoDB init)
-│   │   ├── config/
-│   │   │   ├── db.ts           # Old SQLite config (deprecated)
-│   │   │   └── mongodb.ts      # MongoDB connection
+│   │   ├── app.ts              # Main entry
+│   │   ├── config/mongodb.ts   # MongoDB connection
 │   │   ├── routes/             # API routes
-│   │   ├── services/           # Business logic
-│   │   │   ├── etl.service.ts  # MongoDB aggregations
-│   │   │   ├── ingestion.service.ts
-│   │   │   ├── backup.service.ts
-│   │   │   └── scheduler.service.ts
-│   │   └── middleware/
-│   ├── scripts/
-│   │   ├── fetch_jacadi_report.py  # Playwright automation
-│   │   └── migrate_sqlite_to_mongo.ts # Migration script
-│   ├── data.db                 # Old SQLite database (archived)
-│   ├── data_input/             # Downloaded CSVs
-│   ├── data_archive/           # Processed CSVs
-│   └── backups/                # DB backups
-├── frontend/                   # React/Vite/TypeScript
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── components/dashboard/
-│   │   └── services/api.ts
-│   └── vite.config.ts          # With /api proxy to backend
-└── memory/PRD.md
+│   │   └── services/           # Business logic
+│   └── scripts/
+│       └── fetch_jacadi_report.py # Playwright automation
+└── frontend/                   # React/Vite/TypeScript
+    └── src/
+        └── components/dashboard/
+            ├── Dashboard.tsx
+            ├── ManualUpload.tsx    # NEW
+            └── SyncHistory.tsx
 ```
 
-### Sync Data Flow
-1. User clicks "Sync Data" button (Admin only)
-2. Backend creates MongoDB backup point (if mongodump available)
-3. Playwright script logs into Olabi portal
-4. Downloads Invoice Detail CSV for yesterday
-5. CSV moved to data_input folder
-6. ETL service processes and ingests data
-7. File archived after successful ingestion
+### Environment Variables Required for Deployment
+```
+# Backend
+PORT=8001
+JWT_SECRET=<secure-random-string>
+MONGO_URL=<managed-mongodb-url>
+DB_NAME=jacadi_dsr
+DATA_INPUT_DIR=/app/backend/data_input
+DATA_ARCHIVE_DIR=/app/backend/data_archive
+OLABI_USERNAME=<olabi-credentials>
+OLABI_PASSWORD=<olabi-credentials>
+```
 
-### Completed This Session
-- ✅ SQLite to MongoDB database migration
-- ✅ Created migration script (`migrate_sqlite_to_mongo.ts`)
-- ✅ Fixed MongoDB aggregation projection errors ($literal for constants)
-- ✅ Updated all route files for MongoDB
-- ✅ Updated ingestion service for MongoDB
-- ✅ Updated backup service for MongoDB (mongodump)
-- ✅ Added Vite proxy configuration for /api routes
-- ✅ All APIs tested and working
+### Data Summary (Current)
+- 15,204 sales transactions
+- 6,627 footfall records  
+- 4 users
+- 3 store locations
 
-### Testing Results (Jan 31, 2026)
-- **Backend**: 100% success rate (21/21 tests passed)
-- **Frontend**: 95% (all major features working)
-- All 7 dashboard tabs verified functional
-- Authentication working correctly
-- Admin features (Sync History, Manage Users) working
+## Known Issues
+1. **Playwright Automation** - Olabi portal UI changed, locators need updating
+   - Workaround: Use Manual Upload feature
 
-## Upcoming Tasks (P1)
-- Historical data backfill (if needed)
-- Error handling improvements for sync
-- Sync status notifications in UI
+## Next Steps
+1. Fix Playwright script to match current Olabi Portal UI
+2. Test manual upload with actual Olabi export files
+3. Add email notifications for sync completion/failure
 
-## Future Tasks (P2)
-- Email alerts on sync completion/failure
-- Dashboard drill-down filters enhancement
+## Future Enhancements
 - Export to Excel functionality
 - User management improvements
+- Dashboard drill-down filter enhancements

@@ -493,7 +493,8 @@ export const getRetailPerformance = async (
                                 $and: [
                                     { $gte: ['$_id.invoice_date', dates.startOfPM] },
                                     { $lte: ['$_id.invoice_date', dates.endOfPM] },
-                                    { $ne: ['$_id.order_channel_name', 'E-Commerce'] }
+                                    { $ne: ['$_id.order_channel_name', 'E-Commerce'] },
+                                    { $eq: ['$is_whatsapp', 0] }
                                 ]
                             },
                             '$total_nett',
@@ -508,7 +509,12 @@ export const getRetailPerformance = async (
                                 $and: [
                                     { $gte: ['$_id.invoice_date', dates.startOfPM] },
                                     { $lte: ['$_id.invoice_date', dates.endOfPM] },
-                                    { $eq: ['$_id.order_channel_name', 'E-Commerce'] }
+                                    {
+                                        $or: [
+                                            { $eq: ['$_id.order_channel_name', 'E-Commerce'] },
+                                            { $eq: ['$is_whatsapp', 1] }
+                                        ]
+                                    }
                                 ]
                             },
                             '$total_nett',
@@ -525,7 +531,8 @@ export const getRetailPerformance = async (
                                     { $lte: ['$_id.invoice_date', dates.endOfPM] },
                                     { $ne: ['$_id.order_channel_name', 'E-Commerce'] },
                                     { $eq: ['$_id.transaction_type', 'IV'] },
-                                    { $eq: ['$is_sales_trx', 1] }
+                                    { $eq: ['$is_sales_trx', 1] },
+                                    { $eq: ['$is_whatsapp', 0] }
                                 ]
                             },
                             1,
@@ -540,7 +547,12 @@ export const getRetailPerformance = async (
                                 $and: [
                                     { $gte: ['$_id.invoice_date', dates.startOfPM] },
                                     { $lte: ['$_id.invoice_date', dates.endOfPM] },
-                                    { $eq: ['$_id.order_channel_name', 'E-Commerce'] },
+                                    {
+                                        $or: [
+                                            { $eq: ['$_id.order_channel_name', 'E-Commerce'] },
+                                            { $eq: ['$is_whatsapp', 1] }
+                                        ]
+                                    },
                                     { $eq: ['$_id.transaction_type', 'IV'] },
                                     { $eq: ['$is_sales_trx', 1] }
                                 ]

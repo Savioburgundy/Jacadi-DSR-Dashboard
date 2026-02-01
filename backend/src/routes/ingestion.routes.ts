@@ -202,4 +202,74 @@ router.post('/upload/footfall', authenticateJWT, authorizeRole(['admin']), uploa
     }
 });
 
+// Automated Download: Footfall Report from Surecount (Admin Only)
+router.post('/download/footfall', authenticateJWT, authorizeRole(['admin']), async (req, res) => {
+    try {
+        const { downloadFootfallReport } = await import('../services/ingestion.service');
+        await downloadFootfallReport();
+        res.json({ message: 'Footfall download initiated successfully. Check server logs for progress.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Footfall download failed', error: (error as Error).message });
+    }
+});
+
+// Combined Sync: Download and Ingest Footfall (Admin Only)
+router.post('/sync/footfall', authenticateJWT, authorizeRole(['admin']), async (req, res) => {
+    const logsCollection = getCollection('ingestion_logs');
+    
+    try {
+        console.log('🚀 Starting Footfall Sync from Surecount...');
+        
+        // 1. Download footfall report
+        const { downloadFootfallReport } = await import('../services/ingestion.service');
+        await downloadFootfallReport();
+        console.log('✅ Footfall report downloaded');
+        
+        // 2. Process any new footfall files in data_input
+        const inputDir = process.env.DATA_INPUT_DIR || path.join(__dirname, '../../data_input');
+        const files = fs.readdirSync(inputDir).filter(f => 
+            f.toLowerCase().includes('footfall') && f.toLowerCase().endsWith('.csv')
+        );
+        
+        let totalRows = 0;
+        for (const file of files) {
+            const filePath = path.join(inputDir, file);
+            const rowCount = await processFootfallCSV(filePath);
+            totalRows += rowCount;
+            
+            // Log success
+            await logsCollection.insertOne({
+                id: uuidv4(),
+                filename: `[AUTO-FOOTFALL] ${file}`,
+                status: 'success',
+                rows_added: rowCount,
+                created_at: new Date()
+            });
+            
+            // Archive file
+            const archiveDir = process.env.DATA_ARCHIVE_DIR || path.join(__dirname, '../../data_archive');
+            if (!fs.existsSync(archiveDir)) fs.mkdirSync(archiveDir, { recursive: true });
+            fs.renameSync(filePath, path.join(archiveDir, file));
+        }
+        
+        res.json({ 
+            message: 'Footfall sync completed successfully', 
+            files_processed: files.length,
+            rows_added: totalRows 
+        });
+    } catch (error) {
+        console.error('❌ Footfall sync failed:', error);
+        
+        await logsCollection.insertOne({
+            id: uuidv4(),
+            filename: '[AUTO-FOOTFALL] Sync Failed',
+            status: 'failed',
+            error_message: (error as Error).message,
+            created_at: new Date()
+        });
+        
+        res.status(500).json({ message: 'Footfall sync failed', error: (error as Error).message });
+    }
+});
+
 export default router;

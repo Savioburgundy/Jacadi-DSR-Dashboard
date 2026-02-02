@@ -345,14 +345,14 @@ const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
             let filename = '';
             
             if (exportType === 'full') {
-                url = '/ingestion/export-db';
+                url = '/ingest/export-db';
                 filename = `jacadi_dsr_full_export_${new Date().toISOString().split('T')[0]}.json`;
             } else {
                 if (exportFormat === 'csv') {
-                    url = `/ingestion/export-csv/${selectedCollection}`;
+                    url = `/ingest/export-csv/${selectedCollection}`;
                     filename = `${selectedCollection}_${new Date().toISOString().split('T')[0]}.csv`;
                 } else {
-                    url = `/ingestion/export-db?collection=${selectedCollection}`;
+                    url = `/ingest/export-db?collection=${selectedCollection}`;
                     filename = `${selectedCollection}_${new Date().toISOString().split('T')[0]}.json`;
                 }
             }

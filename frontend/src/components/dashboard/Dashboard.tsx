@@ -712,7 +712,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                     </div>
 
                     {/* Content Area */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible">
+                    <div className="bg-white rounded-lg sm:rounded-2xl shadow-sm border border-slate-200 overflow-visible">
 
                         {/* Analytics Tab */}
                         {activeTab === 'analytics' && (

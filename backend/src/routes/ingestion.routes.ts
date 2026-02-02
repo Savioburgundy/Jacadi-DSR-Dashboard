@@ -327,7 +327,7 @@ router.get('/export-db', authenticateJWT, authorizeRole(['admin']), async (req, 
 });
 
 // GET /api/ingestion/export-csv/:collection - Export collection as CSV (Admin only)
-router.get('/export-csv/:collection', authenticateJWT, authorizeRole('admin'), async (req, res) => {
+router.get('/export-csv/:collection', authenticateJWT, authorizeRole(['admin']), async (req, res) => {
     try {
         const { collection } = req.params;
         const validCollections = ['sales_transactions', 'footfall', 'users', 'ingestion_logs'];

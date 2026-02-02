@@ -357,20 +357,43 @@ const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
                 }
             }
             
-            const response = await api.get(url, { responseType: 'blob' });
-            const blob = new Blob([response.data], { 
-                type: exportFormat === 'csv' ? 'text/csv' : 'application/json' 
+            // Use window.open for direct download - more reliable
+            const token = localStorage.getItem('token');
+            const baseUrl = api.defaults.baseURL || '/api';
+            const fullUrl = `${baseUrl}${url}`;
+            
+            // Create a hidden form to submit with auth header
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
+            
+            if (!response.ok) {
+                throw new Error('Export failed');
+            }
+            
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
+            link.href = downloadUrl;
             link.download = filename;
+            link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
             
-            alert('Export completed successfully!');
+            // Cleanup
+            setTimeout(() => {
+                window.URL.revokeObjectURL(downloadUrl);
+                document.body.removeChild(link);
+            }, 100);
+            
+            alert('Export completed! Check your Downloads folder.');
+            onClose();
         } catch (error: any) {
-            alert('Export failed: ' + (error.response?.data?.message || error.message));
+            console.error('Export error:', error);
+            alert('Export failed: ' + (error.message || 'Unknown error'));
         } finally {
             setIsExporting(false);
         }

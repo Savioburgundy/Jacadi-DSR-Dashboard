@@ -717,8 +717,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
 
                         {/* Analytics Tab */}
                         {activeTab === 'analytics' && (
-                            <div className="p-6">
-                                <Analytics />
+                            <div className="p-2 sm:p-6">
+                                <Analytics startDate={startDate} endDate={endDate} />
                             </div>
                         )}
 

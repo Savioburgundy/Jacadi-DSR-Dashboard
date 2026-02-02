@@ -580,13 +580,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             <ArrowRight size={14} className="text-slate-400 hidden sm:block" />
 
                             {/* To Date */}
-                            <div className="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm">
+                            <div className="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm flex-1 sm:flex-none min-w-[120px]">
                                 <span className="text-[10px] text-slate-400 mr-2 font-bold uppercase">To</span>
                                 <input
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="bg-transparent border-none text-slate-700 text-sm outline-none font-medium cursor-pointer"
+                                    className="bg-transparent border-none text-slate-700 text-xs sm:text-sm outline-none font-medium cursor-pointer w-full"
                                 />
                             </div>
                         </div>
@@ -594,38 +594,38 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
 
                     {/* Admin Actions */}
                     {currentRole === 'admin' && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-start sm:justify-end">
                             <button
                                 onClick={() => setShowUserMgmt(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
+                                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all"
                             >
-                                <UserCog size={14} />
-                                <span>Manage Users</span>
+                                <UserCog size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                <span className="hidden xs:inline">Users</span>
                             </button>
                             <button
                                 onClick={() => setShowSyncHistory(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition-all"
+                                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition-all"
                             >
-                                <History size={14} />
-                                <span>Sync History</span>
+                                <History size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                <span className="hidden xs:inline">History</span>
                             </button>
                             <button
                                 onClick={() => setShowManualUpload(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-green-600 transition-all"
+                                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs shadow-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-green-600 transition-all"
                             >
-                                <Upload size={14} />
-                                <span>Upload CSV</span>
+                                <Upload size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                <span className="hidden xs:inline">Upload</span>
                             </button>
                             <button
                                 onClick={handleSync}
                                 disabled={isSyncing}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all ${isSyncing
+                                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs shadow-sm transition-all ${isSyncing
                                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                     : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md'
                                     }`}
                             >
-                                <RefreshCcw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                                <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                                <RefreshCcw size={12} className={`sm:w-[14px] sm:h-[14px] ${isSyncing ? 'animate-spin' : ''}`} />
+                                <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
                             </button>
                         </div>
                     )}

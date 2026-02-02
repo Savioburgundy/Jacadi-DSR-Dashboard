@@ -357,12 +357,10 @@ const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
                 }
             }
             
-            // Use window.open for direct download - more reliable
+            // Use fetch for direct download with auth
             const token = localStorage.getItem('token');
-            const baseUrl = api.defaults.baseURL || '/api';
-            const fullUrl = `${baseUrl}${url}`;
+            const fullUrl = `/api${url}`;
             
-            // Create a hidden form to submit with auth header
             const response = await fetch(fullUrl, {
                 method: 'GET',
                 headers: {
@@ -371,7 +369,8 @@ const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
             });
             
             if (!response.ok) {
-                throw new Error('Export failed');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Export failed');
             }
             
             const blob = await response.blob();

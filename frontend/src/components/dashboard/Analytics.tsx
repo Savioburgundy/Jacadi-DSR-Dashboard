@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
     LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import { Info, Calendar } from 'lucide-react';
+import { Info, Calendar, HelpCircle } from 'lucide-react';
 import api from '../../services/api';
 
 // Format number with Indian comma style (₹1,23,456)
@@ -25,6 +25,28 @@ const formatIndianNumber = (num: number): string => {
     return result;
 };
 
+// Info Tooltip Component
+const InfoTooltip = ({ text }: { text: string }) => {
+    const [show, setShow] = useState(false);
+    
+    return (
+        <span className="relative inline-flex items-center ml-1">
+            <HelpCircle 
+                size={12} 
+                className="text-slate-400 hover:text-blue-500 cursor-help transition-colors"
+                onMouseEnter={() => setShow(true)}
+                onMouseLeave={() => setShow(false)}
+            />
+            {show && (
+                <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 sm:w-56 p-2 bg-slate-800 text-white text-[10px] sm:text-xs rounded-lg shadow-lg">
+                    {text}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                </div>
+            )}
+        </span>
+    );
+};
+
 // Custom Tooltip for charts
 const CustomTooltip = ({ active, payload, label, prefix = '₹' }: any) => {
     if (active && payload && payload.length) {
@@ -42,11 +64,14 @@ const CustomTooltip = ({ active, payload, label, prefix = '₹' }: any) => {
     return null;
 };
 
-// Info Card Component
-const InfoCard = ({ title, dateRange, children }: { title: string, dateRange: string, children: React.ReactNode }) => (
+// Info Card Component with tooltip
+const InfoCard = ({ title, dateRange, tooltip, children }: { title: string, dateRange: string, tooltip?: string, children: React.ReactNode }) => (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
         <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+            <h3 className="text-lg font-semibold text-slate-800 flex items-center">
+                {title}
+                {tooltip && <InfoTooltip text={tooltip} />}
+            </h3>
             <div className="flex items-center gap-1 text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-full">
                 <Calendar size={12} />
                 <span>{dateRange}</span>
@@ -55,6 +80,18 @@ const InfoCard = ({ title, dateRange, children }: { title: string, dateRange: st
         {children}
     </div>
 );
+
+// KPI definitions for tooltips
+const KPI_INFO = {
+    totalSales: "Total Net Revenue: Sum of all invoice values in the selected period (Net of Returns).",
+    transactions: "Transaction Count: Number of unique invoices where transaction type is 'IV' or 'IR' and item is classified as 'Sales'. Excludes returns (SR).",
+    atv: "Average Transaction Value: Total Net Revenue ÷ Total Transactions. Indicates average spend per customer visit.",
+    upt: "Units Per Transaction: Total Units Sold ÷ Total Transactions. Indicates average items per basket.",
+    salesTrend: "Shows daily net sales revenue trend for the selected period. Helps identify peak and slow days.",
+    channelMix: "Breakdown of sales by channel (Brick and Mortar vs E-Commerce). Shows contribution percentage.",
+    storePerformance: "Comparison of net sales across different store locations for the selected period.",
+    hourlyTraffic: "Distribution of transactions across hours of the day. Helps identify peak shopping hours."
+};
 
 interface AnalyticsProps {
     startDate?: string;
@@ -142,7 +179,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ startDate, endDate }) => {
         <div className="space-y-4 sm:space-y-6 p-2 sm:p-4 pb-8">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Dashboard Analytics</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center">
+                    Dashboard Analytics
+                    <InfoTooltip text="Visual analytics showing sales trends, channel distribution, store performance, and traffic patterns for the selected date range." />
+                </h2>
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100">
                     <Info size={14} className="text-blue-500" />
                     <span>Data Period: <strong className="text-blue-600">{dateRangeText}</strong></span>
@@ -152,22 +192,34 @@ const Analytics: React.FC<AnalyticsProps> = ({ startDate, endDate }) => {
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-slate-200">
-                    <h3 className="text-slate-500 text-xs sm:text-sm">Total Sales</h3>
+                    <h3 className="text-slate-500 text-xs sm:text-sm flex items-center">
+                        Total Sales
+                        <InfoTooltip text={KPI_INFO.totalSales} />
+                    </h3>
                     <p className="text-lg sm:text-2xl font-bold text-slate-800">₹{formatIndianNumber(summary?.total_sales || 0)}</p>
                     <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{dateRangeText}</p>
                 </div>
                 <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-slate-200">
-                    <h3 className="text-slate-500 text-xs sm:text-sm">Transactions</h3>
+                    <h3 className="text-slate-500 text-xs sm:text-sm flex items-center">
+                        Transactions
+                        <InfoTooltip text={KPI_INFO.transactions} />
+                    </h3>
                     <p className="text-lg sm:text-2xl font-bold text-slate-800">{formatIndianNumber(summary?.total_trx || 0)}</p>
                     <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{dateRangeText}</p>
                 </div>
                 <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-slate-200">
-                    <h3 className="text-slate-500 text-xs sm:text-sm">ATV</h3>
+                    <h3 className="text-slate-500 text-xs sm:text-sm flex items-center">
+                        ATV
+                        <InfoTooltip text={KPI_INFO.atv} />
+                    </h3>
                     <p className="text-lg sm:text-2xl font-bold text-slate-800">₹{formatIndianNumber(summary?.atv || 0)}</p>
                     <p className="text-[10px] sm:text-xs text-slate-400 mt-1">Avg Transaction Value</p>
                 </div>
                 <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-slate-200">
-                    <h3 className="text-slate-500 text-xs sm:text-sm">UPT</h3>
+                    <h3 className="text-slate-500 text-xs sm:text-sm flex items-center">
+                        UPT
+                        <InfoTooltip text={KPI_INFO.upt} />
+                    </h3>
                     <p className="text-lg sm:text-2xl font-bold text-slate-800">{summary?.upt || 0}</p>
                     <p className="text-[10px] sm:text-xs text-slate-400 mt-1">Units Per Transaction</p>
                 </div>
@@ -176,7 +228,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ startDate, endDate }) => {
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Sales Trend - Line Chart */}
-                <InfoCard title="Sales Trend" dateRange={dateRangeText}>
+                <InfoCard title="Sales Trend" dateRange={dateRangeText} tooltip={KPI_INFO.salesTrend}>
                     <div className="h-56 sm:h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={trends}>
@@ -210,7 +262,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ startDate, endDate }) => {
                 </InfoCard>
 
                 {/* Channel Mix - Pie Chart */}
-                <InfoCard title="Channel Mix" dateRange={dateRangeText}>
+                <InfoCard title="Channel Mix" dateRange={dateRangeText} tooltip={KPI_INFO.channelMix}>
                     <div className="h-56 sm:h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -243,7 +295,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ startDate, endDate }) => {
             {/* Charts Row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Store Performance - Bar Chart */}
-                <InfoCard title="Store Performance" dateRange={dateRangeText}>
+                <InfoCard title="Store Performance" dateRange={dateRangeText} tooltip={KPI_INFO.storePerformance}>
                     <div className="h-64 sm:h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={stores} layout="vertical">
@@ -267,7 +319,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ startDate, endDate }) => {
                 </InfoCard>
 
                 {/* Hourly Traffic - Bar Chart */}
-                <InfoCard title="Hourly Traffic Pattern" dateRange={dateRangeText}>
+                <InfoCard title="Hourly Traffic Pattern" dateRange={dateRangeText} tooltip={KPI_INFO.hourlyTraffic}>
                     <div className="h-64 sm:h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={hourly}>

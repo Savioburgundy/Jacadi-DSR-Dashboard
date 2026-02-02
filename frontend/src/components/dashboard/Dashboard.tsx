@@ -1228,15 +1228,18 @@ const KPICard = ({ title, value, subtext, icon, pmGrowth }: {
     </div>
 );
 
-const TableContainer = ({ title, subtitle, children }: { title: string, subtitle: string, children: React.ReactNode }) => (
+const TableContainer = ({ title, subtitle, children, onExport }: { title: string, subtitle: string, children: React.ReactNode, onExport?: () => void }) => (
     <div>
         <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-slate-100 flex justify-between items-center bg-white">
             <div>
                 <h2 className="text-sm sm:text-lg font-bold text-slate-800">{title}</h2>
                 <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">{subtitle}</p>
             </div>
-            <div className="text-slate-300">
-                <BarChart2 size={16} className="sm:w-5 sm:h-5" />
+            <div className="flex items-center gap-3">
+                {onExport && <ExportButton onClick={onExport} />}
+                <div className="text-slate-300">
+                    <BarChart2 size={16} className="sm:w-5 sm:h-5" />
+                </div>
             </div>
         </div>
         <div className="overflow-x-auto">

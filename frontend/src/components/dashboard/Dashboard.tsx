@@ -1142,8 +1142,24 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             const saleGrowth = calculateGrowth(totalMtd, totalPm);
                             const trxGrowth = calculateGrowth(totalTrx, totalPmTrx);
 
+                            // Export function for Retail + Omni
+                            const handleExportRetailOmni = () => {
+                                const exportData = retailOmniData.map(row => ({
+                                    Location: row.Location,
+                                    'MTD Sale': row.MTD_SALE,
+                                    'MTD TRX': row.MTD_TRX,
+                                    'PM Sale': row.PM_SALE,
+                                    'PM TRX': row.PM_TRX,
+                                    'Sale Growth %': calculateGrowth(row.MTD_SALE, row.PM_SALE).toFixed(1),
+                                    'TRX Growth %': calculateGrowth(row.MTD_TRX, row.PM_TRX).toFixed(1),
+                                    'YTD Sale': row.YTD_SALE,
+                                    'YTD TRX': row.YTD_TRX
+                                }));
+                                exportToCSV(exportData, 'Retail_Plus_Omni');
+                            };
+
                             return (
-                                <TableContainer title="Retail + Omni" subtitle="Total Brand Performance">
+                                <TableContainer title="Retail + Omni" subtitle="Total Brand Performance" onExport={handleExportRetailOmni}>
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                                             <tr>

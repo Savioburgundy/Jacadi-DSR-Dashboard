@@ -6,23 +6,33 @@ import {
 import { Info, Calendar, HelpCircle } from 'lucide-react';
 import api from '../../services/api';
 
-// Format number with Indian comma style (₹1,23,456)
+// Format number with Indian comma style (₹51,36,765)
 const formatIndianNumber = (num: number): string => {
-    if (num === null || num === undefined) return '0';
-    const numStr = Math.round(num).toString();
-    let result = '';
-    let count = 0;
-    for (let i = numStr.length - 1; i >= 0; i--) {
-        count++;
-        result = numStr[i] + result;
-        if (count === 3 && i !== 0) {
-            result = ',' + result;
-            count = 0;
-        } else if (count > 3 && count % 2 === 1 && i !== 0) {
-            result = ',' + result;
-        }
+    if (num === null || num === undefined || isNaN(num)) return '0';
+    
+    const isNegative = num < 0;
+    const absNum = Math.abs(Math.round(num));
+    const numStr = absNum.toString();
+    
+    if (numStr.length <= 3) {
+        return isNegative ? `-${numStr}` : numStr;
     }
-    return result;
+    
+    // Indian format: last 3 digits, then groups of 2
+    const lastThree = numStr.slice(-3);
+    const remaining = numStr.slice(0, -3);
+    
+    // Add commas every 2 digits for the remaining part
+    let formatted = '';
+    for (let i = remaining.length - 1, count = 0; i >= 0; i--, count++) {
+        if (count > 0 && count % 2 === 0) {
+            formatted = ',' + formatted;
+        }
+        formatted = remaining[i] + formatted;
+    }
+    
+    const result = formatted ? `${formatted},${lastThree}` : lastThree;
+    return isNegative ? `-${result}` : result;
 };
 
 // Info Tooltip Component

@@ -562,22 +562,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             placeholder="All Categories"
                         />
 
-                        <div className="h-6 w-px bg-slate-200 mx-1 hidden xl:block"></div>
+                        <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
 
                         {/* Date Selectors */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             {/* From Date */}
-                            <div className="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm">
+                            <div className="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm flex-1 sm:flex-none min-w-[120px]">
                                 <span className="text-[10px] text-slate-400 mr-2 font-bold uppercase">From</span>
                                 <input
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="bg-transparent border-none text-slate-700 text-sm outline-none font-medium cursor-pointer"
+                                    className="bg-transparent border-none text-slate-700 text-xs sm:text-sm outline-none font-medium cursor-pointer w-full"
                                 />
                             </div>
 
-                            <ArrowRight size={14} className="text-slate-400" />
+                            <ArrowRight size={14} className="text-slate-400 hidden sm:block" />
 
                             {/* To Date */}
                             <div className="flex items-center bg-white border border-slate-300 rounded-md px-2 py-1.5 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm">

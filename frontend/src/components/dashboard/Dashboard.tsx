@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { TrendingUp, DollarSign, ShoppingCart, Users, BarChart2, ArrowRight, Clock, UserCog, Info, ArrowUpRight, ArrowDownRight, ChevronDown, RefreshCcw, History, Upload } from 'lucide-react';
+import { TrendingUp, DollarSign, ShoppingCart, Users, BarChart2, ArrowRight, Clock, UserCog, Info, ArrowUpRight, ArrowDownRight, ChevronDown, RefreshCcw, History, Upload, Download } from 'lucide-react';
 import api from '../../services/api';
 import UserManagement from '../admin/UserManagement';
 import SyncHistory from './SyncHistory';
@@ -9,6 +9,49 @@ import Analytics from './Analytics';
 import ManualUpload from './ManualUpload';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+
+// Export to CSV utility function
+const exportToCSV = (data: any[], filename: string, headers?: string[]) => {
+    if (!data || data.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    
+    const keys = headers || Object.keys(data[0]);
+    const csvHeaders = keys.join(',');
+    const csvRows = data.map(row => 
+        keys.map(key => {
+            const value = row[key];
+            // Handle values with commas or quotes
+            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value ?? '';
+        }).join(',')
+    );
+    
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+// Export Button Component
+const ExportButton = ({ onClick, label = "Export CSV" }: { onClick: () => void, label?: string }) => (
+    <button
+        onClick={onClick}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-all"
+    >
+        <Download size={14} />
+        {label}
+    </button>
+);
 
 interface DashboardProps {
     currentRole?: string;

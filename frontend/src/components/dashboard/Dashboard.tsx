@@ -324,6 +324,187 @@ const MultiSelectDropdown = ({
     );
 };
 
+// Export Database Modal Component (Admin Only)
+const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportType, setExportType] = useState<'full' | 'collection'>('full');
+    const [selectedCollection, setSelectedCollection] = useState('sales_transactions');
+    const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('csv');
+
+    const collections = [
+        { id: 'sales_transactions', name: 'Sales Transactions', description: '~15K records' },
+        { id: 'footfall', name: 'Footfall Data', description: '~6K records' },
+        { id: 'users', name: 'Users', description: 'User accounts' },
+        { id: 'ingestion_logs', name: 'Ingestion Logs', description: 'Sync history' }
+    ];
+
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            let url = '';
+            let filename = '';
+            
+            if (exportType === 'full') {
+                url = '/ingestion/export-db';
+                filename = `jacadi_dsr_full_export_${new Date().toISOString().split('T')[0]}.json`;
+            } else {
+                if (exportFormat === 'csv') {
+                    url = `/ingestion/export-csv/${selectedCollection}`;
+                    filename = `${selectedCollection}_${new Date().toISOString().split('T')[0]}.csv`;
+                } else {
+                    url = `/ingestion/export-db?collection=${selectedCollection}`;
+                    filename = `${selectedCollection}_${new Date().toISOString().split('T')[0]}.json`;
+                }
+            }
+            
+            const response = await api.get(url, { responseType: 'blob' });
+            const blob = new Blob([response.data], { 
+                type: exportFormat === 'csv' ? 'text/csv' : 'application/json' 
+            });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            alert('Export completed successfully!');
+        } catch (error: any) {
+            alert('Export failed: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-slate-800">Export Database</h2>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                        ✕
+                    </button>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                    {/* Export Type Selection */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Export Type</label>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setExportType('full')}
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                    exportType === 'full' 
+                                        ? 'bg-amber-500 text-white' 
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                Full Database
+                            </button>
+                            <button
+                                onClick={() => setExportType('collection')}
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                    exportType === 'collection' 
+                                        ? 'bg-amber-500 text-white' 
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                Single Collection
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Collection Selection (if single collection) */}
+                    {exportType === 'collection' && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Select Collection</label>
+                                <div className="space-y-2">
+                                    {collections.map(coll => (
+                                        <label 
+                                            key={coll.id}
+                                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                                selectedCollection === coll.id 
+                                                    ? 'border-amber-500 bg-amber-50' 
+                                                    : 'border-slate-200 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="collection"
+                                                checked={selectedCollection === coll.id}
+                                                onChange={() => setSelectedCollection(coll.id)}
+                                                className="w-4 h-4 text-amber-500"
+                                            />
+                                            <div>
+                                                <div className="font-medium text-slate-800">{coll.name}</div>
+                                                <div className="text-xs text-slate-500">{coll.description}</div>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Export Format</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setExportFormat('csv')}
+                                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                            exportFormat === 'csv' 
+                                                ? 'bg-emerald-500 text-white' 
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        CSV (Excel)
+                                    </button>
+                                    <button
+                                        onClick={() => setExportFormat('json')}
+                                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                            exportFormat === 'json' 
+                                                ? 'bg-emerald-500 text-white' 
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {exportType === 'full' && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                            <strong>Full Database Export</strong> includes all collections (Sales, Footfall, Users, Logs) in a single JSON file.
+                        </div>
+                    )}
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-200 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2 px-4 rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 font-medium transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                            isExporting 
+                                ? 'bg-slate-300 text-slate-500 cursor-not-allowed' 
+                                : 'bg-amber-500 text-white hover:bg-amber-600'
+                        }`}
+                    >
+                        <Download size={16} />
+                        {isExporting ? 'Exporting...' : 'Export'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
     const [showUserMgmt, setShowUserMgmt] = useState(false);
     const [showSyncHistory, setShowSyncHistory] = useState(false);

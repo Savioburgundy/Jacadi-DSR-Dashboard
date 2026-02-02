@@ -1047,7 +1047,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                                 <th className="px-6 py-4 text-right">TRX % <InfoTooltip text={LOGIC_HELP['col-growth-trx']} position="bottom" /></th>
                                                 <th className="px-6 py-4 text-right text-slate-400">YTD SALE <InfoTooltip text={LOGIC_HELP['col-ytd-sale']} position="bottom" /></th>
                                                 <th className="px-6 py-4 text-right text-slate-400 whitespace-nowrap">YTD TRX <InfoTooltip text={LOGIC_HELP['col-ytd-trx']} position="bottom" /></th>
-                                                <th className="px-6 py-4 text-right text-slate-400">YTD TRX <InfoTooltip text={LOGIC_HELP['col-ytd-trx']} position="bottom" /></th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">

@@ -1068,7 +1068,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                                         </td>
                                                         <td className="px-6 py-4 text-right font-mono text-slate-400">{formatCurrency(row.YTD_SALE)}</td>
                                                         <td className="px-6 py-4 text-right font-mono text-slate-400">{formatNumber(row.YTD_TRX)}</td>
-                                                        <td className="px-6 py-4 text-right font-mono text-slate-400">{formatNumber(row.YTD_TRX)}</td>
                                                     </tr>
                                                 );
                                             })}

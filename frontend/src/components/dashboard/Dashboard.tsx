@@ -1168,35 +1168,35 @@ const KPICard = ({ title, value, subtext, icon, pmGrowth }: {
     icon: React.ReactNode,
     pmGrowth?: number | null
 }) => (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-all group overflow-visible">
-        <div className="flex justify-between items-start mb-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">{title}</h3>
-            <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition-colors">{icon}</div>
-        </div>
-        <div className="text-3xl font-black text-slate-900 mb-1">{value}</div>
-        <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="text-xs text-slate-400 font-medium">{subtext}</span>
-            <div className="flex gap-1.5 ml-auto">
-                {pmGrowth !== undefined && pmGrowth !== null && (
-                    <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold ${pmGrowth >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                        {pmGrowth >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                        {Math.abs(pmGrowth).toFixed(1)}% <span className="opacity-60 ml-0.5 font-normal">PM</span>
-                    </div>
-                )}
+    <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 shadow-sm border border-slate-200 hover:shadow-md transition-all group overflow-visible">
+        <div className="flex justify-between items-start mb-2 sm:mb-4">
+            <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 leading-tight">{title}</h3>
+            <div className="p-1.5 sm:p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition-colors shrink-0">
+                <div className="w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">{icon}</div>
             </div>
+        </div>
+        <div className="text-lg sm:text-2xl md:text-3xl font-black text-slate-900 mb-1 truncate">{value}</div>
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-2 sm:mt-3">
+            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{subtext}</span>
+            {pmGrowth !== undefined && pmGrowth !== null && (
+                <div className={`flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold ml-auto ${pmGrowth >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                    {pmGrowth >= 0 ? <ArrowUpRight size={8} className="sm:w-[10px] sm:h-[10px]" /> : <ArrowDownRight size={8} className="sm:w-[10px] sm:h-[10px]" />}
+                    {Math.abs(pmGrowth).toFixed(1)}%
+                </div>
+            )}
         </div>
     </div>
 );
 
 const TableContainer = ({ title, subtitle, children }: { title: string, subtitle: string, children: React.ReactNode }) => (
     <div>
-        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-slate-100 flex justify-between items-center bg-white">
             <div>
-                <h2 className="text-lg font-bold text-slate-800">{title}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+                <h2 className="text-sm sm:text-lg font-bold text-slate-800">{title}</h2>
+                <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">{subtitle}</p>
             </div>
             <div className="text-slate-300">
-                <BarChart2 size={20} />
+                <BarChart2 size={16} className="sm:w-5 sm:h-5" />
             </div>
         </div>
         <div className="overflow-x-auto">

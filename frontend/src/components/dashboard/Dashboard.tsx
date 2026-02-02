@@ -374,6 +374,40 @@ const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
             }
             
             const blob = await response.blob();
+            
+            // Try to use File System Access API for "Save As" dialog
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const fileExtension = exportFormat === 'csv' || (exportType === 'collection' && exportFormat === 'csv') ? 'csv' : 'json';
+                    const mimeType = fileExtension === 'csv' ? 'text/csv' : 'application/json';
+                    
+                    const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{
+                            description: fileExtension === 'csv' ? 'CSV File' : 'JSON File',
+                            accept: { [mimeType]: [`.${fileExtension}`] }
+                        }]
+                    });
+                    
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    
+                    alert('Export saved successfully!');
+                    onClose();
+                    return;
+                } catch (pickerError: any) {
+                    // User cancelled the save dialog or API not supported
+                    if (pickerError.name === 'AbortError') {
+                        setIsExporting(false);
+                        return; // User cancelled
+                    }
+                    // Fall through to standard download
+                    console.log('File picker not available, using standard download');
+                }
+            }
+            
+            // Fallback: Standard download
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;

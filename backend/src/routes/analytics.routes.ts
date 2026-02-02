@@ -54,6 +54,9 @@ router.get('/hourly', async (req, res) => {
         
         const dateFilter = buildDateFilter(startDate as string, endDate as string);
         dateFilter.invoice_time = { $exists: true, $ne: '' };
+        // Only count actual sales transactions (IV, IR) with mh1_description = 'Sales'
+        dateFilter.transaction_type = { $in: ['IV', 'IR'] };
+        dateFilter.mh1_description = 'Sales';
         
         const result = await salesTx.aggregate([
             { $match: dateFilter },
@@ -86,7 +89,7 @@ router.get('/hourly', async (req, res) => {
     }
 });
 
-// GET /api/analytics/summary - KPI Cards
+// GET /api/analytics/summary - KPI Cards (matching main dashboard logic)
 router.get('/summary', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -94,33 +97,77 @@ router.get('/summary', async (req, res) => {
         
         const dateFilter = buildDateFilter(startDate as string, endDate as string);
         
+        // Use the same logic as main dashboard KPI cards
+        // Transactions: Only count invoices where transaction_type IN ('IV', 'IR') AND mh1_description = 'Sales'
+        // Revenue: Sum all nett_invoice_value (includes returns for net calculation)
+        // Units: Sum total_sales_qty for actual sales only
+        
         const result = await salesTx.aggregate([
             { $match: dateFilter },
             {
                 $group: {
                     _id: null,
+                    // Total revenue is the sum of all (net of returns)
                     total_sales: { $sum: '$nett_invoice_value' },
-                    unique_invoices: { $addToSet: '$invoice_no' },
-                    total_units: { $sum: '$total_sales_qty' }
+                    // Only count unique invoices that are actual sales (IV or IR) with mh1_description = 'Sales'
+                    unique_invoices: { 
+                        $addToSet: { 
+                            $cond: [
+                                { 
+                                    $and: [
+                                        { $in: ['$transaction_type', ['IV', 'IR']] }, 
+                                        { $eq: ['$mh1_description', 'Sales'] }
+                                    ] 
+                                }, 
+                                '$invoice_no', 
+                                null
+                            ] 
+                        } 
+                    },
+                    // Sum units only for sales transactions
+                    total_units: { 
+                        $sum: { 
+                            $cond: [
+                                { 
+                                    $and: [
+                                        { $in: ['$transaction_type', ['IV', 'IR']] }, 
+                                        { $eq: ['$mh1_description', 'Sales'] }
+                                    ] 
+                                }, 
+                                '$total_sales_qty', 
+                                0
+                            ] 
+                        } 
+                    }
                 }
             },
             {
                 $project: {
                     total_sales: 1,
-                    total_trx: { $size: '$unique_invoices' },
+                    // Filter out null values from unique_invoices
+                    unique_invoices: {
+                        $filter: {
+                            input: '$unique_invoices',
+                            as: 'inv',
+                            cond: { $ne: ['$$inv', null] }
+                        }
+                    },
                     total_units: 1,
                     _id: 0
                 }
             }
         ]).toArray();
         
-        const data = result[0] || { total_sales: 0, total_trx: 0, total_units: 0 };
+        const data = result[0] || { total_sales: 0, unique_invoices: [], total_units: 0 };
+        const total_trx = data.unique_invoices ? data.unique_invoices.length : 0;
+        const total_sales = data.total_sales || 0;
+        const total_units = data.total_units || 0;
 
         res.json({
-            total_sales: data.total_sales || 0,
-            total_trx: data.total_trx || 0,
-            atv: data.total_trx > 0 ? Math.round(data.total_sales / data.total_trx) : 0,
-            upt: data.total_trx > 0 ? (data.total_units / data.total_trx).toFixed(2) : '0'
+            total_sales: total_sales,
+            total_trx: total_trx,
+            atv: total_trx > 0 ? Math.round(total_sales / total_trx) : 0,
+            upt: total_trx > 0 ? parseFloat((total_units / total_trx).toFixed(2)) : 0
         });
     } catch (error: any) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -167,14 +214,36 @@ router.get('/store-performance', async (req, res) => {
                 $group: {
                     _id: '$location_name',
                     sales: { $sum: '$nett_invoice_value' },
-                    unique_invoices: { $addToSet: '$invoice_no' }
+                    // Only count unique invoices that are actual sales
+                    unique_invoices: { 
+                        $addToSet: { 
+                            $cond: [
+                                { 
+                                    $and: [
+                                        { $in: ['$transaction_type', ['IV', 'IR']] }, 
+                                        { $eq: ['$mh1_description', 'Sales'] }
+                                    ] 
+                                }, 
+                                '$invoice_no', 
+                                null
+                            ] 
+                        } 
+                    }
                 }
             },
             {
                 $project: {
                     name: '$_id',
                     sales: 1,
-                    trx: { $size: '$unique_invoices' },
+                    trx: { 
+                        $size: {
+                            $filter: {
+                                input: '$unique_invoices',
+                                as: 'inv',
+                                cond: { $ne: ['$$inv', null] }
+                            }
+                        }
+                    },
                     _id: 0
                 }
             },

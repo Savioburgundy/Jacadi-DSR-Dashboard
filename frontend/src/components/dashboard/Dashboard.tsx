@@ -904,8 +904,26 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             const totalMulties = totalRawTrx > 0 ? (totalRawMulti / totalRawTrx) * 100 : 0;
                             const totalPmMulties = totalPmRawTrx > 0 ? (totalPmRawMulti / totalPmRawTrx) * 100 : 0;
 
+                            // Export function for Conversions
+                            const handleExportConversions = () => {
+                                const exportData = efficiencyData.map(row => ({
+                                    Location: row.Location,
+                                    'MTD Footfall': row.MTD_FOOTFALL,
+                                    'PM Footfall': row.PM_FOOTFALL,
+                                    'MTD Conversion %': row.MTD_CONVERSION_PCT?.toFixed(1),
+                                    'PM Conversion %': row.PM_CONVERSION_PCT?.toFixed(1),
+                                    'MTD ATV': row.MTD_ATV?.toFixed(0),
+                                    'PM ATV': row.PM_ATV?.toFixed(0),
+                                    'MTD Basket Size': row.MTD_BASKET_SIZE?.toFixed(2),
+                                    'PM Basket Size': row.PM_BASKET_SIZE?.toFixed(2),
+                                    'MTD Multies %': row.MTD_MULTIES_PCT?.toFixed(1),
+                                    'PM Multies %': row.PM_MULTIES_PCT?.toFixed(1)
+                                }));
+                                exportToCSV(exportData, 'Conversions_Efficiency');
+                            };
+
                             return (
-                                <TableContainer title="Retail + Whatsapp Sales (Conversions)" subtitle="Efficiency Metrics">
+                                <TableContainer title="Retail + Whatsapp Sales (Conversions)" subtitle="Efficiency Metrics" onExport={handleExportConversions}>
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                                             <tr>

@@ -1059,8 +1059,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             const saleGrowth = calculateGrowth(totalMtd, totalPm);
                             const trxGrowth = calculateGrowth(totalMtdTrx, totalPmTrx);
 
+                            // Export function for Omni TM vs LM
+                            const handleExportOmniTmLm = () => {
+                                const exportData = omniTmLmData.map(row => ({
+                                    Location: row.Location,
+                                    'MTD Sale': row.MTD_SALE,
+                                    'PM Sale': row.PM_SALE,
+                                    'Sale Growth %': calculateGrowth(row.MTD_SALE, row.PM_SALE).toFixed(1),
+                                    'MTD TRX': row.MTD_TRX,
+                                    'PM TRX': row.PM_TRX,
+                                    'TRX Growth %': calculateGrowth(row.MTD_TRX, row.PM_TRX).toFixed(1)
+                                }));
+                                exportToCSV(exportData, 'Omni_TM_vs_LM');
+                            };
+
                             return (
-                                <TableContainer title="Omni Channel TM vs LM" subtitle="Growth Analysis">
+                                <TableContainer title="Omni Channel TM vs LM" subtitle="Growth Analysis" onExport={handleExportOmniTmLm}>
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                                             <tr>

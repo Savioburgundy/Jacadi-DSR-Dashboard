@@ -987,8 +987,24 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             const totalAtv = totalTrx > 0 ? totalSale / totalTrx : 0;
                             const totalBasket = totalTrx > 0 ? totalUnits / totalTrx : 0;
 
+                            // Export function for Omni Channel
+                            const handleExportOmniChannel = () => {
+                                const exportData = omniDetailsData.map(row => ({
+                                    Location: row.Location,
+                                    'MTD Sale': row.MTD_SALE,
+                                    'MTD TRX': row.MTD_TRX,
+                                    'PM Sale': row.PM_SALE,
+                                    'PM TRX': row.PM_TRX,
+                                    'Sale Growth %': calculateGrowth(row.MTD_SALE, row.PM_SALE).toFixed(1),
+                                    'TRX Growth %': calculateGrowth(row.MTD_TRX, row.PM_TRX).toFixed(1),
+                                    'MTD ATV': row.MTD_TRX > 0 ? (row.MTD_SALE / row.MTD_TRX).toFixed(0) : 0,
+                                    'MTD Basket': row.MTD_TRX > 0 ? (row.MTD_UNITS / row.MTD_TRX).toFixed(2) : 0
+                                }));
+                                exportToCSV(exportData, 'Omni_Channel');
+                            };
+
                             return (
-                                <TableContainer title="Omni Channel" subtitle="Detailed E-Commerce Breakdown">
+                                <TableContainer title="Omni Channel" subtitle="Detailed E-Commerce Breakdown" onExport={handleExportOmniChannel}>
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                                             <tr>

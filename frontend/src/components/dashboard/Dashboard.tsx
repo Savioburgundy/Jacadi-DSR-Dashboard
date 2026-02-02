@@ -675,6 +675,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                 >
                                     <span className="sm:hidden">{tab.mobileLabel}</span>
                                     <span className="hidden sm:inline">{tab.label}</span>
+                                    {tab.help && <span className="hidden sm:inline"><InfoTooltip text={tab.help} position="bottom" /></span>}
                                 </button>
                             ))}
                         </nav>

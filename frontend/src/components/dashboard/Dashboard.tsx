@@ -236,15 +236,15 @@ const MultiSelectDropdown = ({
     return (
         <div className="relative" ref={containerRef}>
             <div
-                className={`flex items-center bg-white border rounded-md px-3 py-1.5 transition-all shadow-sm cursor-pointer hover:border-blue-400 select-none
+                className={`flex items-center bg-white border rounded-md px-2 sm:px-3 py-1.5 transition-all shadow-sm cursor-pointer hover:border-blue-400 select-none min-w-[100px] sm:min-w-[140px]
                     ${isOpen ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-300'}`}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span className="text-[10px] text-slate-400 mr-2 font-bold uppercase whitespace-nowrap">{label}</span>
-                <span className="text-sm font-semibold text-slate-700 truncate min-w-[100px] max-w-[150px]">
+                <span className="text-[9px] sm:text-[10px] text-slate-400 mr-1 sm:mr-2 font-bold uppercase whitespace-nowrap">{label}</span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate flex-1 max-w-[80px] sm:max-w-[120px]">
                     {displayValue()}
                 </span>
-                <ChevronDown size={14} className={`ml-2 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={12} className={`ml-1 sm:ml-2 text-slate-400 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </div>
 
             {isOpen && (

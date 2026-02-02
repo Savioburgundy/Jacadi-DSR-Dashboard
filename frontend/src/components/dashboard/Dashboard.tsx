@@ -670,6 +670,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                                 <RefreshCcw size={12} className={`sm:w-[14px] sm:h-[14px] ${isSyncing ? 'animate-spin' : ''}`} />
                                 <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
                             </button>
+                            <button
+                                onClick={() => setShowExportModal(true)}
+                                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs shadow-sm bg-amber-500 text-white hover:bg-amber-600 transition-all"
+                            >
+                                <Download size={12} className="sm:w-[14px] sm:h-[14px]" />
+                                <span className="hidden sm:inline">Export DB</span>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -687,6 +694,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                     onClose={() => setShowManualUpload(false)} 
                     onSuccess={handleManualUploadSuccess}
                 />
+            )}
+
+            {/* Export Database Modal */}
+            {showExportModal && (
+                <ExportDatabaseModal onClose={() => setShowExportModal(false)} />
             )}
 
             {loading ? (

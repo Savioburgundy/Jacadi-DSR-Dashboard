@@ -492,29 +492,30 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
     const sum = (data: any[], key: string) => data.reduce((acc, row) => acc + (row[key] || 0), 0);
 
     return (
-        <div className="p-6 bg-slate-50 min-h-screen text-slate-800 font-sans">
+        <div className="p-2 sm:p-4 md:p-6 bg-slate-50 min-h-screen text-slate-800 font-sans">
             {/* Header */}
-            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 border-b border-slate-200 pb-6 bg-white px-8 py-6 rounded-2xl shadow-sm gap-6">
-                <div className="flex items-center gap-6 flex-shrink-0">
+            <header className="flex flex-col gap-4 mb-4 sm:mb-8 border-b border-slate-200 pb-4 sm:pb-6 bg-white px-3 sm:px-6 md:px-8 py-4 sm:py-6 rounded-xl sm:rounded-2xl shadow-sm">
+                {/* Logo and Title Row */}
+                <div className="flex items-center gap-3 sm:gap-6">
                     <img
                         src="/jacadi-logo.png"
                         alt="Jacadi Logo"
-                        className="h-20 w-auto object-contain"
+                        className="h-12 sm:h-16 md:h-20 w-auto object-contain"
                     />
-                    <div>
-                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-1">
+                    <div className="min-w-0">
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 mb-1">
                             JACADI <span className="text-blue-600">DSR</span>
                         </h1>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider mr-1">Status:</span>
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1 sm:mt-2">
+                            <span className="text-slate-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Status:</span>
                             {latestAvailableDate && (
-                                <span className="flex items-center bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs border border-blue-100 font-bold shadow-sm">
-                                    <Clock size={12} className="mr-1.5" />
-                                    As on: {new Date(latestAvailableDate).toLocaleDateString('en-GB')}
+                                <span className="flex items-center bg-blue-50 text-blue-600 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs border border-blue-100 font-bold shadow-sm">
+                                    <Clock size={10} className="mr-1 sm:mr-1.5 hidden sm:inline" />
+                                    {new Date(latestAvailableDate).toLocaleDateString('en-GB')}
                                 </span>
                             )}
                             {latestAvailableDate && (
-                                <span className="flex items-center bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs border border-emerald-100 font-bold shadow-sm">
+                                <span className="flex items-center bg-emerald-50 text-emerald-600 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs border border-emerald-100 font-bold shadow-sm">
                                     FY {getFinancialYear(latestAvailableDate)}
                                 </span>
                             )}
@@ -522,8 +523,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                     </div>
                 </div>
 
-                <div className="flex-grow flex flex-col items-end gap-3 max-w-full">
-                    <div className="flex flex-wrap items-center justify-end gap-3 bg-slate-50/50 p-2 rounded-xl border border-slate-200/60 shadow-inner w-auto max-w-full">
+                {/* Filters Row */}
+                <div className="flex flex-col gap-3 w-full">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-50/50 p-2 rounded-xl border border-slate-200/60 shadow-inner w-full">
                         {/* Brand Filter - FIRST */}
                         <MultiSelectDropdown
                             label="Brand"

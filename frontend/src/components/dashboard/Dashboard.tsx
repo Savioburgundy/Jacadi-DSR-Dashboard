@@ -357,72 +357,51 @@ const ExportDatabaseModal = ({ onClose }: { onClose: () => void }) => {
                 }
             }
             
-            // Use fetch for direct download with auth
+            // Use fetch for download with auth
             const token = localStorage.getItem('token');
             const fullUrl = `/api${url}`;
+            
+            console.log('Fetching export from:', fullUrl);
             
             const response = await fetch(fullUrl, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': exportType === 'full' ? 'application/json' : (exportFormat === 'csv' ? 'text/csv' : 'application/json')
                 }
             });
             
+            console.log('Response status:', response.status);
+            
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Export failed');
+                const errorText = await response.text();
+                console.error('Export error response:', errorText);
+                throw new Error('Export failed: ' + response.status);
             }
             
             const blob = await response.blob();
+            console.log('Blob size:', blob.size);
             
-            // Try to use File System Access API for "Save As" dialog
-            if ('showSaveFilePicker' in window) {
-                try {
-                    const fileExtension = exportFormat === 'csv' || (exportType === 'collection' && exportFormat === 'csv') ? 'csv' : 'json';
-                    const mimeType = fileExtension === 'csv' ? 'text/csv' : 'application/json';
-                    
-                    const handle = await (window as any).showSaveFilePicker({
-                        suggestedName: filename,
-                        types: [{
-                            description: fileExtension === 'csv' ? 'CSV File' : 'JSON File',
-                            accept: { [mimeType]: [`.${fileExtension}`] }
-                        }]
-                    });
-                    
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    
-                    alert('Export saved successfully!');
-                    onClose();
-                    return;
-                } catch (pickerError: any) {
-                    // User cancelled the save dialog or API not supported
-                    if (pickerError.name === 'AbortError') {
-                        setIsExporting(false);
-                        return; // User cancelled
-                    }
-                    // Fall through to standard download
-                    console.log('File picker not available, using standard download');
-                }
-            }
+            // Create object URL and trigger download
+            const blobUrl = URL.createObjectURL(blob);
             
-            // Fallback: Standard download
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = filename;
-            link.style.display = 'none';
-            document.body.appendChild(link);
-            link.click();
+            // Create and click download link
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename;
             
-            // Cleanup
-            setTimeout(() => {
-                window.URL.revokeObjectURL(downloadUrl);
-                document.body.removeChild(link);
-            }, 100);
+            // Append to body, click, and remove
+            document.body.appendChild(a);
+            a.click();
             
-            alert('Export completed! Check your Downloads folder.');
+            // Small delay before cleanup
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+            
+            alert(`Export complete! File "${filename}" should be in your Downloads folder.`);
             onClose();
         } catch (error: any) {
             console.error('Export error:', error);

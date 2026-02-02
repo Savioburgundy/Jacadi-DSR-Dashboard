@@ -782,8 +782,26 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             const saleGrowthTotal = calculateGrowth(totalMtdRetail + totalMtdWhatsapp, totalPm);
                             const trxGrowthTotal = calculateGrowth(totalMtdTrx, totalPmTrx);
 
+                            // Export function for Retail + Whatsapp Sales
+                            const handleExportRetailWhatsapp = () => {
+                                const exportData = retailData.map(row => ({
+                                    Location: row.Location,
+                                    'MTD Sale': row.MTD_RETAIL_SALE + row.MTD_WHATSAPP_SALE,
+                                    'MTD Qty': row.MTD_QTY,
+                                    'MTD TRX': row.MTD_RETAIL_TRX + row.MTD_WHATSAPP_TRX,
+                                    'PM Sale': row.PM_RETAIL_SALE + row.PM_WHATSAPP_SALE,
+                                    'PM Qty': row.PM_QTY,
+                                    'PM TRX': row.PM_RETAIL_TRX + row.PM_WHATSAPP_TRX,
+                                    'Sale Growth %': calculateGrowth(row.MTD_RETAIL_SALE + row.MTD_WHATSAPP_SALE, row.PM_RETAIL_SALE + row.PM_WHATSAPP_SALE).toFixed(1),
+                                    'TRX Growth %': calculateGrowth(row.MTD_RETAIL_TRX + row.MTD_WHATSAPP_TRX, row.PM_RETAIL_TRX + row.PM_WHATSAPP_TRX).toFixed(1),
+                                    'YTD Sale': row.YTD_SALE,
+                                    'YTD TRX': row.YTD_TRX
+                                }));
+                                exportToCSV(exportData, 'Retail_Whatsapp_Sales');
+                            };
+
                             return (
-                                <TableContainer title="Retail + Whatsapp Sales" subtitle="Sales Performance Breakdown">
+                                <TableContainer title="Retail + Whatsapp Sales" subtitle="Sales Performance Breakdown" onExport={handleExportRetailWhatsapp}>
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                                             <tr>

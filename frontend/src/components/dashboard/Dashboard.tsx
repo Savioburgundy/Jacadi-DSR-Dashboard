@@ -654,34 +654,34 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
             ) : (
                 <>
                     {/* Tab Navigation */}
-                    <div className="mb-8 overflow-x-auto">
-                        <nav className="flex space-x-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit min-w-max">
+                    <div className="mb-4 sm:mb-8 overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
+                        <nav className="flex space-x-1 sm:space-x-2 bg-white p-1 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm w-fit min-w-max">
                             {[
-                                { id: 'retail-sales', label: 'Retail + Whatsapp Sales', help: LOGIC_HELP['tab-retail'] },
-                                { id: 'retail-sales-2', label: 'Retail + Whatsapp Sales (Conversions)', help: LOGIC_HELP['tab-efficiency'] },
-                                { id: 'whatsapp-sales', label: 'Whatsapp Sale', help: LOGIC_HELP['tab-whatsapp'] },
-                                { id: 'omni-channel-tm-lm', label: 'Omni Channel TM vs LM', help: LOGIC_HELP['tab-omni-tm-lm'] },
-                                { id: 'omni-channel', label: 'Omni Channel', help: LOGIC_HELP['tab-omni'] },
-                                { id: 'retail-omni', label: 'Retail + Omni', help: LOGIC_HELP['tab-retail-omni'] },
-                                { id: 'analytics', label: 'Analytics', help: LOGIC_HELP['tab-analytics'] }
+                                { id: 'retail-sales', label: 'Retail Sales', mobileLabel: 'Retail', help: LOGIC_HELP['tab-retail'] },
+                                { id: 'retail-sales-2', label: 'Conversions', mobileLabel: 'Conv.', help: LOGIC_HELP['tab-efficiency'] },
+                                { id: 'whatsapp-sales', label: 'Whatsapp Sale', mobileLabel: 'WA', help: LOGIC_HELP['tab-whatsapp'] },
+                                { id: 'omni-channel-tm-lm', label: 'Omni TM/LM', mobileLabel: 'Omni', help: LOGIC_HELP['tab-omni-tm-lm'] },
+                                { id: 'omni-channel', label: 'Omni Channel', mobileLabel: 'Omni+', help: LOGIC_HELP['tab-omni'] },
+                                { id: 'retail-omni', label: 'Retail+Omni', mobileLabel: 'R+O', help: LOGIC_HELP['tab-retail-omni'] },
+                                { id: 'analytics', label: 'Analytics', mobileLabel: 'Charts', help: LOGIC_HELP['tab-analytics'] }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id as TabType)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap flex items-center gap-1 ${activeTab === tab.id
+                                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-sm font-bold transition-all duration-200 whitespace-nowrap flex items-center gap-1 ${activeTab === tab.id
                                         ? 'bg-blue-600 text-white shadow-md'
                                         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
                                         }`}
                                 >
-                                    <span>{tab.label}</span>
-                                    {tab.help && <InfoTooltip text={tab.help} position="bottom" />}
+                                    <span className="sm:hidden">{tab.mobileLabel}</span>
+                                    <span className="hidden sm:inline">{tab.label}</span>
                                 </button>
                             ))}
                         </nav>
                     </div>
 
                     {/* KPI Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6 mb-4 sm:mb-8">
                         <KPICard
                             title={<span>Total Revenue <InfoTooltip text={LOGIC_HELP['col-sale']} /></span>}
                             value={formatCurrency(summary.total_revenue || 0)}

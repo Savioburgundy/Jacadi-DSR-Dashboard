@@ -266,4 +266,111 @@ router.post('/sync/footfall', authenticateJWT, authorizeRole(['admin']), async (
     }
 });
 
+// GET /api/ingestion/export-db - Export entire database (Admin only)
+router.get('/export-db', authenticateJWT, authorizeRole('admin'), async (req, res) => {
+    try {
+        const { collection } = req.query;
+        
+        // If specific collection requested
+        if (collection && typeof collection === 'string') {
+            const coll = getCollection(collection);
+            const data = await coll.find({}, { projection: { _id: 0 } }).toArray();
+            
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Disposition', `attachment; filename="${collection}_${new Date().toISOString().split('T')[0]}.json"`);
+            return res.json(data);
+        }
+        
+        // Export all collections
+        const salesTx = getCollection('sales_transactions');
+        const footfall = getCollection('footfall');
+        const users = getCollection('users');
+        const logs = getCollection('ingestion_logs');
+        
+        const [salesData, footfallData, usersData, logsData] = await Promise.all([
+            salesTx.find({}, { projection: { _id: 0 } }).toArray(),
+            footfall.find({}, { projection: { _id: 0 } }).toArray(),
+            users.find({}, { projection: { _id: 0, password_hash: 0 } }).toArray(),
+            logs.find({}, { projection: { _id: 0 } }).toArray()
+        ]);
+        
+        const exportData = {
+            exported_at: new Date().toISOString(),
+            database: 'jacadi_dsr',
+            collections: {
+                sales_transactions: {
+                    count: salesData.length,
+                    data: salesData
+                },
+                footfall: {
+                    count: footfallData.length,
+                    data: footfallData
+                },
+                users: {
+                    count: usersData.length,
+                    data: usersData
+                },
+                ingestion_logs: {
+                    count: logsData.length,
+                    data: logsData
+                }
+            }
+        };
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="jacadi_dsr_full_export_${new Date().toISOString().split('T')[0]}.json"`);
+        res.json(exportData);
+    } catch (error) {
+        console.error('❌ Database export failed:', error);
+        res.status(500).json({ message: 'Database export failed', error: (error as Error).message });
+    }
+});
+
+// GET /api/ingestion/export-csv/:collection - Export collection as CSV (Admin only)
+router.get('/export-csv/:collection', authenticateJWT, authorizeRole('admin'), async (req, res) => {
+    try {
+        const { collection } = req.params;
+        const validCollections = ['sales_transactions', 'footfall', 'users', 'ingestion_logs'];
+        
+        if (!validCollections.includes(collection)) {
+            return res.status(400).json({ message: 'Invalid collection name' });
+        }
+        
+        const coll = getCollection(collection);
+        const projection: any = { _id: 0 };
+        if (collection === 'users') {
+            projection.password_hash = 0;
+        }
+        
+        const data = await coll.find({}, { projection }).toArray();
+        
+        if (data.length === 0) {
+            return res.status(404).json({ message: 'No data found in collection' });
+        }
+        
+        // Convert to CSV
+        const headers = Object.keys(data[0]);
+        const csvRows = [
+            headers.join(','),
+            ...data.map(row => 
+                headers.map(header => {
+                    const value = row[header];
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                }).join(',')
+            )
+        ];
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${collection}_${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csvRows.join('\n'));
+    } catch (error) {
+        console.error('❌ CSV export failed:', error);
+        res.status(500).json({ message: 'CSV export failed', error: (error as Error).message });
+    }
+});
+
 export default router;

@@ -1229,8 +1229,23 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
                             const shareWhatsapp = total > 0 ? (totalWhatsapp / total) * 100 : 0;
                             const shareRetail = total > 0 ? (totalRetail / total) * 100 : 0;
 
+                            // Export function for Whatsapp Sales
+                            const handleExportWhatsapp = () => {
+                                const exportData = whatsappData.map(row => ({
+                                    Location: row.Location,
+                                    'MTD Retail Sales': row.MTD_RETAIL_SALES,
+                                    'MTD Whatsapp Sales': row.MTD_WHATSAPP_SALES,
+                                    'MTD Whatsapp Share %': (row.MTD_RETAIL_SALES + row.MTD_WHATSAPP_SALES) > 0 
+                                        ? ((row.MTD_WHATSAPP_SALES / (row.MTD_RETAIL_SALES + row.MTD_WHATSAPP_SALES)) * 100).toFixed(1)
+                                        : 0,
+                                    'PM Retail Sales': row.PM_RETAIL_SALES,
+                                    'PM Whatsapp Sales': row.PM_WHATSAPP_SALES
+                                }));
+                                exportToCSV(exportData, 'Whatsapp_Sales');
+                            };
+
                             return (
-                                <TableContainer title="Whatsapp Sales" subtitle="Direct Retail vs Whatsapp Share">
+                                <TableContainer title="Whatsapp Sales" subtitle="Direct Retail vs Whatsapp Share" onExport={handleExportWhatsapp}>
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                                             <tr>

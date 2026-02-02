@@ -267,7 +267,7 @@ router.post('/sync/footfall', authenticateJWT, authorizeRole(['admin']), async (
 });
 
 // GET /api/ingestion/export-db - Export entire database (Admin only)
-router.get('/export-db', authenticateJWT, authorizeRole('admin'), async (req, res) => {
+router.get('/export-db', authenticateJWT, authorizeRole(['admin']), async (req, res) => {
     try {
         const { collection } = req.query;
         

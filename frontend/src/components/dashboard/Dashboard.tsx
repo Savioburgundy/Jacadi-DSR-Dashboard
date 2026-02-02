@@ -328,6 +328,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentRole }) => {
     const [showUserMgmt, setShowUserMgmt] = useState(false);
     const [showSyncHistory, setShowSyncHistory] = useState(false);
     const [showManualUpload, setShowManualUpload] = useState(false);
+    const [showExportModal, setShowExportModal] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
 
     const handleSync = async () => {

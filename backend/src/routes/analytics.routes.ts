@@ -7,15 +7,29 @@ const router = Router();
 // Apply Authentication
 router.use(authenticateJWT);
 
-// GET /api/analytics/trends - Sales Trend (Last 90 Days)
+// Helper to build date filter
+const buildDateFilter = (startDate?: string, endDate?: string) => {
+    const filter: any = {};
+    if (startDate && endDate) {
+        filter.invoice_date = { $gte: startDate, $lte: endDate };
+    } else if (startDate) {
+        filter.invoice_date = { $gte: startDate };
+    } else if (endDate) {
+        filter.invoice_date = { $lte: endDate };
+    }
+    return filter;
+};
+
+// GET /api/analytics/trends - Sales Trend
 router.get('/trends', async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const salesTx = getCollection('sales_transactions');
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        
+        const dateFilter = buildDateFilter(startDate as string, endDate as string);
         
         const result = await salesTx.aggregate([
-            { $match: { invoice_date: { $gte: ninetyDaysAgo.toISOString().split('T')[0] } } },
+            { $match: dateFilter },
             { 
                 $group: {
                     _id: '$invoice_date',
@@ -35,10 +49,14 @@ router.get('/trends', async (req, res) => {
 // GET /api/analytics/hourly - Hourly Heatmap
 router.get('/hourly', async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const salesTx = getCollection('sales_transactions');
         
+        const dateFilter = buildDateFilter(startDate as string, endDate as string);
+        dateFilter.invoice_time = { $exists: true, $ne: '' };
+        
         const result = await salesTx.aggregate([
-            { $match: { invoice_time: { $exists: true, $ne: '' } } },
+            { $match: dateFilter },
             {
                 $addFields: {
                     hour: { $substr: ['$invoice_time', 0, 2] }
@@ -71,9 +89,13 @@ router.get('/hourly', async (req, res) => {
 // GET /api/analytics/summary - KPI Cards
 router.get('/summary', async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const salesTx = getCollection('sales_transactions');
         
+        const dateFilter = buildDateFilter(startDate as string, endDate as string);
+        
         const result = await salesTx.aggregate([
+            { $match: dateFilter },
             {
                 $group: {
                     _id: null,
@@ -108,9 +130,13 @@ router.get('/summary', async (req, res) => {
 // GET /api/analytics/channel-split - Pie Chart
 router.get('/channel-split', async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const salesTx = getCollection('sales_transactions');
         
+        const dateFilter = buildDateFilter(startDate as string, endDate as string);
+        
         const result = await salesTx.aggregate([
+            { $match: dateFilter },
             {
                 $group: {
                     _id: { $ifNull: ['$order_channel_name', 'Unknown'] },
@@ -130,9 +156,13 @@ router.get('/channel-split', async (req, res) => {
 // GET /api/analytics/store-performance - Bar Chart
 router.get('/store-performance', async (req, res) => {
     try {
+        const { startDate, endDate } = req.query;
         const salesTx = getCollection('sales_transactions');
         
+        const dateFilter = buildDateFilter(startDate as string, endDate as string);
+        
         const result = await salesTx.aggregate([
+            { $match: dateFilter },
             {
                 $group: {
                     _id: '$location_name',

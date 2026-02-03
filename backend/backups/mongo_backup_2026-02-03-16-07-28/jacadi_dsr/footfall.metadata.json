@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"date":{"$numberInt":"1"}},"name":"date_1"}],"uuid":"5039a118bf7a48cf8e5b229da363f18b","collectionName":"footfall","type":"collection"}
